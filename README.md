@@ -1,12 +1,12 @@
 <div align="center">
 
-# 🏗️ BuildAid 1.2.5
+# 🏗️ BuildAid 1.2.6
 **A ferramenta definitiva de auxílio a construção e canais de música sincronizada para Minecraft.**
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-26.2-brightgreen.svg?style=for-the-badge&logo=minecraft)](https://fabricmc.net/)
 [![Fabric](https://img.shields.io/badge/Loader-Fabric-blue.svg?style=for-the-badge&logo=fabric)](https://fabricmc.net/)
 [![Java](https://img.shields.io/badge/Java-25-orange.svg?style=for-the-badge&logo=openjdk)](https://adoptium.net/)
-[![LavaPlayer](https://img.shields.io/badge/Audio-LavaPlayer%202.2.3-purple.svg?style=for-the-badge)](https://github.com/lavalink-devs/lavaplayer)
+[![LavaPlayer](https://img.shields.io/badge/Audio-LavaPlayer%202.2.7-purple.svg?style=for-the-badge)](https://github.com/lavalink-devs/lavaplayer)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 *Um mod **100% client-side** para Minecraft 26.2 (Fabric) projetado para construtores, arquitetos e amigos que jogam e constroem juntos.*
