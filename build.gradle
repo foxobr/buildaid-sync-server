@@ -46,12 +46,24 @@ dependencies {
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-	// Motor de Audio Avancado: LavaPlayer + YouTube Source
+	// Motor de Audio Avancado: LavaPlayer + YouTube Source e dependencias transitivas
 	implementation "dev.arbjerg:lavaplayer:2.2.3"
 	include "dev.arbjerg:lavaplayer:2.2.3"
 
+	implementation "dev.arbjerg:lava-common:2.2.3"
+	include "dev.arbjerg:lava-common:2.2.3"
+
 	implementation "dev.lavalink.youtube:common:1.11.4"
 	include "dev.lavalink.youtube:common:1.11.4"
+
+	include "org.apache.httpcomponents:httpclient:4.5.14"
+	include "org.apache.httpcomponents:httpcore:4.4.16"
+	include "commons-logging:commons-logging:1.2"
+	include "com.fasterxml.jackson.core:jackson-core:2.15.2"
+	include "com.fasterxml.jackson.core:jackson-databind:2.15.2"
+	include "com.fasterxml.jackson.core:jackson-annotations:2.15.2"
+	include "org.jsoup:jsoup:1.17.2"
+	include "com.grack:nanojson:1.9"
 
 	// Cloth Config traz a propria copia da Fabric API; excluir evita conflito de versao.
 	implementation("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}") {
