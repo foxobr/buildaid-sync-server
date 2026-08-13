@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: buildaid-sync-server
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    plan: free
+    autoDeploy: true

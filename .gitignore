@@ -1,0 +1,7 @@
+.gradle/
+build/
+run/
+.idea/
+*.log
+backup_buildaid_pre_music.zip
+node_modules/

@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "buildaid",
+	"version": "${version}",
+	"name": "BuildAid",
+	"description": "Imagens de referência com opacidade e seleção de área para construir.",
+	"authors": [
+		"FoxoBr"
+	],
+	"license": "MIT",
+	"icon": "assets/buildaid/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"com.foxo.buildaid.BuildAidClient"
+		],
+		"modmenu": [
+			"com.foxo.buildaid.config.ModMenuIntegration"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~26.2",
+		"java": ">=25",
+		"fabric-api": "*",
+		"cloth-config": "*"
+	},
+	"suggests": {
+		"modmenu": "*"
+	}
+}

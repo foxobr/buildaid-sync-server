@@ -1,0 +1,21 @@
+{
+  "name": "buildaid-sync-server",
+  "version": "1.0.0",
+  "description": "Servidor de sincronização de salas de música e canais de áudio para o mod Minecraft BuildAid",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "minecraft",
+    "fabric",
+    "music",
+    "sync",
+    "websocket"
+  ],
+  "author": "FoxoBr",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

@@ -1,0 +1,70 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+// Convencao do ecossistema Fabric: <versao do mod>+<versao do Minecraft>.
+// Deixa claro no nome do arquivo para qual versao do jogo o jar serve.
+version = "${project.mod_version}+${project.minecraft_version}"
+group = project.maven_group
+
+base {
+	archivesName = 'buildaid'
+}
+
+repositories {
+	mavenCentral()
+	maven {
+		name = 'Shedaniel'
+		url = 'https://maven.shedaniel.me/'
+	}
+	maven {
+		name = 'TerraformersMC'
+		url = 'https://maven.terraformersmc.com/releases/'
+	}
+}
+
+loom {
+	// Mod client-only: um único source set, sem splitEnvironmentSourceSets().
+	mods {
+		"buildaid" {
+			sourceSet sourceSets.main
+		}
+	}
+}
+
+dependencies {
+	// Versoes em gradle.properties
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// Decodificador puro Java de MP3 para o motor de áudio
+	implementation "javazoom:jlayer:1.0.1"
+
+	// Cloth Config traz a propria copia da Fabric API; excluir evita conflito de versao.
+	implementation("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}") {
+		exclude group: 'net.fabricmc.fabric-api'
+	}
+	implementation "com.terraformersmc:modmenu:${project.modmenu_version}"
+}
+
+processResources {
+	def version = project.version
+	inputs.property 'version', version
+
+	filesMatching('fabric.mod.json') {
+		expand 'version': version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+	it.options.encoding = 'UTF-8'
+}
+
+java {
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
