@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏗️ BuildAid 1.2.8
+# 🏗️ BuildAid 1.2.9
 **A ferramenta definitiva de auxílio a construção e canais de música sincronizada para Minecraft.**
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-26.2-brightgreen.svg?style=for-the-badge&logo=minecraft)](https://fabricmc.net/)
