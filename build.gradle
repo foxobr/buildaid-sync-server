@@ -50,6 +50,9 @@ dependencies {
 	implementation "dev.arbjerg:lavaplayer:2.2.7"
 	include "dev.arbjerg:lavaplayer:2.2.7"
 
+	implementation "dev.arbjerg:lavaplayer-natives:2.2.7"
+	include "dev.arbjerg:lavaplayer-natives:2.2.7"
+
 	implementation "dev.arbjerg:lava-common:2.2.7"
 	include "dev.arbjerg:lava-common:2.2.7"
 
