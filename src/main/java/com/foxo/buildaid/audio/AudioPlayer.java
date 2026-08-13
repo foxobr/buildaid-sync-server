@@ -51,10 +51,17 @@ public final class AudioPlayer {
 
 		// Registrar gerenciador do YouTube moderno e fontes remotas
 		try {
-			YoutubeAudioSourceManager yt = new YoutubeAudioSourceManager();
+			YoutubeAudioSourceManager yt = new YoutubeAudioSourceManager(
+					true,
+					new dev.lavalink.youtube.clients.TvHtml5Embedded(),
+					new dev.lavalink.youtube.clients.Android(),
+					new dev.lavalink.youtube.clients.Music(),
+					new dev.lavalink.youtube.clients.Web()
+			);
 			this.playerManager.registerSourceManager(yt);
-		} catch (Exception e) {
-			BuildAid.LOGGER.error("[AudioPlayer] Erro ao registrar YoutubeAudioSourceManager", e);
+			BuildAid.LOGGER.info("[AudioPlayer] YoutubeAudioSourceManager registrado com sucesso!");
+		} catch (Throwable t) {
+			BuildAid.LOGGER.error("[AudioPlayer] Erro ao registrar YoutubeAudioSourceManager", t);
 		}
 
 		AudioSourceManagers.registerRemoteSources(this.playerManager, com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager.class);
