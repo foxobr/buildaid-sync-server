@@ -355,7 +355,8 @@ public final class MusicSyncClient implements WebSocket.Listener {
 		}
 
 		if (newState.isPlaying()) {
-			if (trackChanged || !AudioPlayer.get().isPlaying()) {
+			boolean isAlreadyHandling = !trackChanged && (AudioPlayer.get().isPlaying() || AudioPlayer.get().isBuffering());
+			if (!isAlreadyHandling) {
 				long now = System.currentTimeMillis();
 				long offset = Math.max(0, (now - newState.startedEpochMs()) / 1000);
 				AudioPlayer.get().play(newState.currentTrack().streamUrl(), offset);
@@ -363,7 +364,7 @@ public final class MusicSyncClient implements WebSocket.Listener {
 				AudioPlayer.get().resume();
 			}
 		} else {
-			if (AudioPlayer.get().isPlaying()) {
+			if (AudioPlayer.get().isPlaying() || AudioPlayer.get().isBuffering()) {
 				AudioPlayer.get().pause();
 			}
 		}

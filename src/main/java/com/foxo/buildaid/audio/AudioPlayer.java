@@ -68,7 +68,8 @@ public final class AudioPlayer {
 			@Override
 			public void onTrackEnd(com.sedmelluq.discord.lavaplayer.player.AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
 				buffering.set(false);
-				if (endReason.mayStartNext) {
+				// Apenas avanca para a proxima faixa se a musica terminou naturalmente
+				if (endReason == AudioTrackEndReason.FINISHED) {
 					MusicSyncClient.get().skip();
 				}
 			}
@@ -99,6 +100,11 @@ public final class AudioPlayer {
 	public synchronized void play(String identifier, long offsetSeconds) {
 		if (identifier == null || identifier.isBlank()) {
 			stop();
+			return;
+		}
+
+		if (identifier.equals(currentUrl) && (lavaPlayer.getPlayingTrack() != null || buffering.get())) {
+			// Ja esta carregando ou reproduzindo esta mesma URL
 			return;
 		}
 
