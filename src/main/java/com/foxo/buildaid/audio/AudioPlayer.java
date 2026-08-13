@@ -1,111 +1,171 @@
 package com.foxo.buildaid.audio;
 
 import com.foxo.buildaid.BuildAid;
-import javazoom.jl.decoder.Bitstream;
-import javazoom.jl.decoder.Decoder;
-import javazoom.jl.decoder.Header;
-import javazoom.jl.decoder.SampleBuffer;
+import com.foxo.buildaid.net.music.MusicSyncClient;
+import com.sedmelluq.discord.lavaplayer.format.AudioDataFormat;
+import com.sedmelluq.discord.lavaplayer.format.StandardAudioDataFormats;
+import com.sedmelluq.discord.lavaplayer.player.AudioConfiguration;
+import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
+import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
+import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
+import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
+import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
+import com.sedmelluq.discord.lavaplayer.track.playback.AudioFrame;
+import dev.lavalink.youtube.YoutubeAudioSourceManager;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
-import java.io.BufferedInputStream;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Motor de reproducao de audio client-side com decodificacao de streaming MP3 e controle de volume.
- *
- * <p>Executa a decodificacao e envio de dados para a placa de som em uma thread dedicada em segundo plano,
- * sem interferir na renderizacao ou no loop principal do Minecraft.
+ * Motor de reproducao de audio baseado em LavaPlayer com suporte nativo a YouTube,
+ * SoundCloud, Twitch, Web Streams, MP3, AAC, FLAC e Opus.
  */
 public final class AudioPlayer {
 	private static final AudioPlayer INSTANCE = new AudioPlayer();
 
-	private Thread playThread;
+	private final AudioPlayerManager playerManager;
+	private final com.sedmelluq.discord.lavaplayer.player.AudioPlayer lavaPlayer;
+
+	private SourceDataLine soundLine;
+	private FloatControl gainControl;
+	private volatile float volume = 0.5f;
+	private volatile String currentUrl = "";
+
+	private Thread audioOutputThread;
 	private final AtomicBoolean running = new AtomicBoolean(false);
-	private final AtomicBoolean paused = new AtomicBoolean(false);
 	private final AtomicBoolean buffering = new AtomicBoolean(false);
 
-	private volatile String currentUrl = "";
-	private volatile float volume = 0.5f; // 0.0 a 1.0 (50% padrao)
-	private final AtomicLong currentPositionMs = new AtomicLong(0);
-	private volatile long startOffsetMs = 0;
-
-	private SourceDataLine line;
-	private FloatControl gainControl;
-
 	private AudioPlayer() {
+		this.playerManager = new DefaultAudioPlayerManager();
+		this.playerManager.getConfiguration().setResamplingQuality(AudioConfiguration.ResamplingQuality.HIGH);
+		this.playerManager.getConfiguration().setOutputFormat(StandardAudioDataFormats.COMMON_PCM_S16_LE);
+
+		// Registrar gerenciador do YouTube moderno e fontes remotas
+		try {
+			YoutubeAudioSourceManager yt = new YoutubeAudioSourceManager();
+			this.playerManager.registerSourceManager(yt);
+		} catch (Exception e) {
+			BuildAid.LOGGER.error("[AudioPlayer] Erro ao registrar YoutubeAudioSourceManager", e);
+		}
+
+		AudioSourceManagers.registerRemoteSources(this.playerManager, com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager.class);
+		AudioSourceManagers.registerLocalSource(this.playerManager);
+
+		this.lavaPlayer = this.playerManager.createPlayer();
+		this.lavaPlayer.setVolume((int) (this.volume * 100));
+
+		this.lavaPlayer.addListener(new AudioEventAdapter() {
+			@Override
+			public void onTrackEnd(com.sedmelluq.discord.lavaplayer.player.AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
+				buffering.set(false);
+				if (endReason.mayStartNext) {
+					MusicSyncClient.get().skip();
+				}
+			}
+
+			@Override
+			public void onTrackException(com.sedmelluq.discord.lavaplayer.player.AudioPlayer player, AudioTrack track, FriendlyException exception) {
+				buffering.set(false);
+				BuildAid.LOGGER.error("[AudioPlayer] Falha na reproducao da faixa: {}", exception.getMessage());
+			}
+
+			@Override
+			public void onTrackStuck(com.sedmelluq.discord.lavaplayer.player.AudioPlayer player, AudioTrack track, long thresholdMs) {
+				buffering.set(true);
+			}
+		});
+
+		startOutputWorker();
 	}
 
 	public static AudioPlayer get() {
 		return INSTANCE;
 	}
 
-	public synchronized void play(String streamUrl, long offsetSeconds) {
-		stop();
-		if (streamUrl == null || streamUrl.isBlank()) {
+	public AudioPlayerManager getPlayerManager() {
+		return playerManager;
+	}
+
+	public synchronized void play(String identifier, long offsetSeconds) {
+		if (identifier == null || identifier.isBlank()) {
+			stop();
 			return;
 		}
 
-		currentUrl = streamUrl;
-		startOffsetMs = Math.max(0, offsetSeconds * 1000);
-		currentPositionMs.set(startOffsetMs);
-		paused.set(false);
-		running.set(true);
+		currentUrl = identifier;
 		buffering.set(true);
 
-		playThread = new Thread(this::streamWorker, "BuildAid-AudioPlayer");
-		playThread.setDaemon(true);
-		playThread.start();
+		playerManager.loadItem(identifier, new AudioLoadResultHandler() {
+			@Override
+			public void trackLoaded(AudioTrack track) {
+				buffering.set(false);
+				if (offsetSeconds > 0) {
+					track.setPosition(offsetSeconds * 1000);
+				}
+				lavaPlayer.playTrack(track);
+				lavaPlayer.setPaused(false);
+			}
+
+			@Override
+			public void playlistLoaded(AudioPlaylist playlist) {
+				buffering.set(false);
+				if (!playlist.getTracks().isEmpty()) {
+					AudioTrack track = playlist.getSelectedTrack() != null ? playlist.getSelectedTrack() : playlist.getTracks().get(0);
+					if (offsetSeconds > 0) {
+						track.setPosition(offsetSeconds * 1000);
+					}
+					lavaPlayer.playTrack(track);
+					lavaPlayer.setPaused(false);
+				}
+			}
+
+			@Override
+			public void noMatches() {
+				buffering.set(false);
+				BuildAid.LOGGER.warn("[AudioPlayer] Nenhuma midia compativel encontrada para: {}", identifier);
+			}
+
+			@Override
+			public void loadFailed(FriendlyException exception) {
+				buffering.set(false);
+				BuildAid.LOGGER.error("[AudioPlayer] Erro ao carregar faixa: {}", exception.getMessage());
+			}
+		});
 	}
 
 	public void pause() {
-		paused.set(true);
-		if (line != null && line.isOpen()) {
-			line.stop();
-		}
+		lavaPlayer.setPaused(true);
 	}
 
 	public void resume() {
-		paused.set(false);
-		if (line != null && line.isOpen()) {
-			line.start();
-		}
+		lavaPlayer.setPaused(false);
 	}
 
 	public void togglePause() {
-		if (paused.get()) {
-			resume();
-		} else {
-			pause();
-		}
+		lavaPlayer.setPaused(!lavaPlayer.isPaused());
 	}
 
 	public synchronized void stop() {
-		running.set(false);
-		paused.set(false);
 		buffering.set(false);
-		if (playThread != null) {
-			playThread.interrupt();
-			playThread = null;
-		}
-		closeLine();
-		currentPositionMs.set(0);
 		currentUrl = "";
+		lavaPlayer.stopTrack();
 	}
 
 	public void setVolume(float newVolume) {
 		this.volume = Math.clamp(newVolume, 0.0f, 1.0f);
-		applyVolume();
+		if (lavaPlayer != null) {
+			lavaPlayer.setVolume((int) (this.volume * 100));
+		}
+		applyHardwareVolume();
 	}
 
 	public float getVolume() {
@@ -113,28 +173,91 @@ public final class AudioPlayer {
 	}
 
 	public boolean isPlaying() {
-		return running.get() && !paused.get() && !buffering.get();
+		return lavaPlayer.getPlayingTrack() != null && !lavaPlayer.isPaused();
 	}
 
 	public boolean isPaused() {
-		return running.get() && paused.get();
+		return lavaPlayer.getPlayingTrack() != null && lavaPlayer.isPaused();
 	}
 
 	public boolean isBuffering() {
-		return running.get() && buffering.get();
+		return buffering.get();
 	}
 
 	public long getPositionSeconds() {
-		return currentPositionMs.get() / 1000;
+		AudioTrack track = lavaPlayer.getPlayingTrack();
+		return track != null ? track.getPosition() / 1000 : 0;
 	}
 
-	private void applyVolume() {
+	public String getCurrentUrl() {
+		return currentUrl;
+	}
+
+	private void startOutputWorker() {
+		running.set(true);
+		audioOutputThread = new Thread(this::audioPumpLoop, "BuildAid-LavaPlayer-Pump");
+		audioOutputThread.setDaemon(true);
+		audioOutputThread.start();
+	}
+
+	private void audioPumpLoop() {
+		AudioDataFormat format = playerManager.getConfiguration().getOutputFormat();
+
+		try {
+			ensureSoundLine(format.sampleRate, format.channelCount);
+		} catch (Exception e) {
+			BuildAid.LOGGER.error("[AudioPlayer] Nao foi possivel inicializar a linha de som", e);
+		}
+
+		while (running.get()) {
+			try {
+				AudioFrame frame = lavaPlayer.provide(20, TimeUnit.MILLISECONDS);
+				if (frame != null) {
+					byte[] data = frame.getData();
+					if (soundLine != null && soundLine.isOpen()) {
+						soundLine.write(data, 0, data.length);
+					}
+				} else {
+					Thread.sleep(5);
+				}
+			} catch (InterruptedException ignored) {
+				break;
+			} catch (Exception e) {
+				BuildAid.LOGGER.error("[AudioPlayer] Erro no loop de saida de audio", e);
+			}
+		}
+
+		closeSoundLine();
+	}
+
+	private synchronized void ensureSoundLine(int sampleRate, int channels) throws LineUnavailableException {
+		if (soundLine != null && soundLine.isOpen()) {
+			return;
+		}
+
+		AudioFormat audioFormat = new AudioFormat(
+				sampleRate,
+				16,
+				channels,
+				true,
+				false
+		);
+
+		soundLine = AudioSystem.getSourceDataLine(audioFormat);
+		soundLine.open(audioFormat, 32 * 1024);
+		if (soundLine.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
+			gainControl = (FloatControl) soundLine.getControl(FloatControl.Type.MASTER_GAIN);
+		}
+		applyHardwareVolume();
+		soundLine.start();
+	}
+
+	private void applyHardwareVolume() {
 		if (gainControl != null) {
 			try {
 				if (volume <= 0.001f) {
 					gainControl.setValue(gainControl.getMinimum());
 				} else {
-					// Curva logaritmica perceptiva para controle de decibeis
 					float min = gainControl.getMinimum();
 					float max = Math.min(gainControl.getMaximum(), 6.0f);
 					float dB = (float) (Math.log10(volume) * 20.0);
@@ -145,138 +268,14 @@ public final class AudioPlayer {
 		}
 	}
 
-	private void streamWorker() {
-		InputStream inputStream = null;
-		Bitstream bitstream = null;
-
-		try {
-			BuildAid.LOGGER.info("[AudioPlayer] Conectando a stream: {}", currentUrl);
-
-			HttpClient client = HttpClient.newBuilder()
-					.followRedirects(HttpClient.Redirect.ALWAYS)
-					.connectTimeout(Duration.ofSeconds(12))
-					.build();
-
-			HttpRequest request = HttpRequest.newBuilder()
-					.uri(URI.create(currentUrl))
-					.header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) BuildAid-MinecraftMod/1.0")
-					.header("Accept", "*/*")
-					.header("Icy-MetaData", "0")
-					.timeout(Duration.ofSeconds(20))
-					.GET()
-					.build();
-
-			HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
-			if (response.statusCode() >= 400) {
-				BuildAid.LOGGER.error("[AudioPlayer] Resposta HTTP invalida ao obter stream: {}", response.statusCode());
-				return;
-			}
-
-			inputStream = new BufferedInputStream(response.body(), 64 * 1024);
-			bitstream = new Bitstream(inputStream);
-			Decoder decoder = new Decoder();
-
-			buffering.set(false);
-
-			byte[] byteBuffer = new byte[8192];
-			long skippedMs = 0;
-
-			while (running.get()) {
-				if (paused.get()) {
-					Thread.sleep(50);
-					continue;
-				}
-
-				Header header = bitstream.readFrame();
-				if (header == null) {
-					// Fim da stream
-					break;
-				}
-
-				float frameMs = header.ms_per_frame();
-
-				// Pular frames ate o offset desejado
-				if (skippedMs < startOffsetMs) {
-					skippedMs += (long) frameMs;
-					bitstream.closeFrame();
-					continue;
-				}
-
-				SampleBuffer output = (SampleBuffer) decoder.decodeFrame(header, bitstream);
-				short[] pcm = output.getBuffer();
-				int pcmLen = output.getBufferLength();
-				int sampleRate = output.getSampleFrequency();
-				int channels = output.getChannelCount();
-
-				ensureLine(sampleRate, channels);
-
-				int byteIdx = 0;
-				for (int i = 0; i < pcmLen; i++) {
-					short sample = pcm[i];
-					byteBuffer[byteIdx++] = (byte) (sample & 0xFF);
-					byteBuffer[byteIdx++] = (byte) ((sample >> 8) & 0xFF);
-				}
-
-				if (line != null && line.isOpen()) {
-					line.write(byteBuffer, 0, byteIdx);
-				}
-
-				currentPositionMs.addAndGet((long) frameMs);
-				bitstream.closeFrame();
-			}
-		} catch (InterruptedException ignored) {
-			// Parada solicitada
-		} catch (Throwable t) {
-			if (running.get()) {
-				BuildAid.LOGGER.error("[AudioPlayer] Erro na reproducao da stream de audio", t);
-			}
-		} finally {
-			buffering.set(false);
-			running.set(false);
+	private synchronized void closeSoundLine() {
+		if (soundLine != null) {
 			try {
-				if (bitstream != null) {
-					bitstream.close();
-				}
-				if (inputStream != null) {
-					inputStream.close();
-				}
+				soundLine.stop();
+				soundLine.close();
 			} catch (Exception ignored) {
 			}
-			closeLine();
-		}
-	}
-
-	private void ensureLine(int sampleRate, int channels) throws LineUnavailableException {
-		if (line != null && line.isOpen()) {
-			return;
-		}
-
-		AudioFormat format = new AudioFormat(
-				sampleRate,
-				16, // 16-bit
-				channels,
-				true, // signed
-				false // little-endian
-		);
-
-		line = AudioSystem.getSourceDataLine(format);
-		line.open(format, 64 * 1024);
-		if (line.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
-			gainControl = (FloatControl) line.getControl(FloatControl.Type.MASTER_GAIN);
-		}
-		applyVolume();
-		line.start();
-	}
-
-	private void closeLine() {
-		if (line != null) {
-			try {
-				line.stop();
-				line.flush();
-				line.close();
-			} catch (Exception ignored) {
-			}
-			line = null;
+			soundLine = null;
 			gainControl = null;
 		}
 	}

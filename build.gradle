@@ -21,6 +21,14 @@ repositories {
 		name = 'TerraformersMC'
 		url = 'https://maven.terraformersmc.com/releases/'
 	}
+	maven {
+		name = 'Lavalink'
+		url = 'https://maven.lavalink.dev/releases'
+	}
+	maven {
+		name = 'JitPack'
+		url = 'https://jitpack.io'
+	}
 }
 
 loom {
@@ -38,9 +46,12 @@ dependencies {
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-	// Decodificador puro Java de MP3 para o motor de áudio (incluido no JAR)
-	implementation "javazoom:jlayer:1.0.1"
-	include "javazoom:jlayer:1.0.1"
+	// Motor de Audio Avancado: LavaPlayer + YouTube Source
+	implementation "dev.arbjerg:lavaplayer:2.2.3"
+	include "dev.arbjerg:lavaplayer:2.2.3"
+
+	implementation "dev.lavalink.youtube:common:1.11.4"
+	include "dev.lavalink.youtube:common:1.11.4"
 
 	// Cloth Config traz a propria copia da Fabric API; excluir evita conflito de versao.
 	implementation("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}") {
