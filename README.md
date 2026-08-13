@@ -105,10 +105,10 @@ Por padrão, apenas **quatro teclas** vêm configuradas de fábrica para evitar 
 
 ## 🚀 Servidor de Música Companion
 
-O BuildAid inclui um servidor de relay de sincronização leve baseado em **Node.js**:
+O BuildAid inclui o código do servidor de relay de sincronização leve baseado em **Node.js**:
 
-- **Local:** Dê dois cliques no arquivo `iniciar_servidor.bat` na pasta do mod.
-- **Nuvem Gratuita (Render.com / Glitch / Railway):** O repositório já inclui o arquivo `render.yaml` pronto para deploy com 1 clique.
+- **Nuvem Gratuita (Render.com / Glitch / Railway):** O repositório já inclui o arquivo `render.yaml` pronto para deploy automático com 1 clique.
+- **Auto-hospedagem (VPS / Servidor Dedicado):** Basta executar `npm install && node index.js` dentro da pasta `server/`.
 
 ---
 
