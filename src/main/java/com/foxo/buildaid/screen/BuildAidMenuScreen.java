@@ -888,6 +888,10 @@ public class BuildAidMenuScreen extends Screen {
 		}));
 
 		y += 22;
+		if (config.music.serverUrl == null || config.music.serverUrl.isBlank() || config.music.serverUrl.contains("localhost")) {
+			config.music.serverUrl = "wss://buildaid-sync-server.onrender.com";
+			config.save();
+		}
 		musicServerBox = new EditBox(this.font, leftX, y, colWidth, 18, Component.translatable("buildaid.menu.music_server"));
 		musicServerBox.setMaxLength(128);
 		musicServerBox.setHint(Component.translatable("buildaid.menu.music_server_hint"));

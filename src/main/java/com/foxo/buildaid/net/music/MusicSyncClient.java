@@ -137,8 +137,8 @@ public final class MusicSyncClient implements WebSocket.Listener {
 	}
 
 	public synchronized void connectAndJoin(String serverUrl, String roomId, String username, boolean silent) {
-		if (serverUrl == null || serverUrl.isBlank()) {
-			serverUrl = "ws://localhost:3000";
+		if (serverUrl == null || serverUrl.isBlank() || serverUrl.contains("localhost")) {
+			serverUrl = "wss://buildaid-sync-server.onrender.com";
 		}
 		this.currentServerUrl = serverUrl.trim();
 		this.currentRoomId = roomId != null ? roomId.trim() : "";
