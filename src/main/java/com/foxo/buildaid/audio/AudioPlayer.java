@@ -14,7 +14,10 @@ import javax.sound.sampled.SourceDataLine;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URLConnection;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -148,12 +151,28 @@ public final class AudioPlayer {
 
 		try {
 			BuildAid.LOGGER.info("[AudioPlayer] Conectando a stream: {}", currentUrl);
-			URLConnection connection = URI.create(currentUrl).toURL().openConnection();
-			connection.setRequestProperty("User-Agent", "Mozilla/5.0 BuildAid-MinecraftMod/1.0");
-			connection.setConnectTimeout(15000);
-			connection.setReadTimeout(30000);
 
-			inputStream = new BufferedInputStream(connection.getInputStream(), 64 * 1024);
+			HttpClient client = HttpClient.newBuilder()
+					.followRedirects(HttpClient.Redirect.ALWAYS)
+					.connectTimeout(Duration.ofSeconds(12))
+					.build();
+
+			HttpRequest request = HttpRequest.newBuilder()
+					.uri(URI.create(currentUrl))
+					.header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) BuildAid-MinecraftMod/1.0")
+					.header("Accept", "*/*")
+					.header("Icy-MetaData", "0")
+					.timeout(Duration.ofSeconds(20))
+					.GET()
+					.build();
+
+			HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+			if (response.statusCode() >= 400) {
+				BuildAid.LOGGER.error("[AudioPlayer] Resposta HTTP invalida ao obter stream: {}", response.statusCode());
+				return;
+			}
+
+			inputStream = new BufferedInputStream(response.body(), 64 * 1024);
 			bitstream = new Bitstream(inputStream);
 			Decoder decoder = new Decoder();
 
@@ -207,9 +226,9 @@ public final class AudioPlayer {
 			}
 		} catch (InterruptedException ignored) {
 			// Parada solicitada
-		} catch (Exception e) {
+		} catch (Throwable t) {
 			if (running.get()) {
-				BuildAid.LOGGER.error("[AudioPlayer] Erro na reproducao da stream de audio", e);
+				BuildAid.LOGGER.error("[AudioPlayer] Erro na reproducao da stream de audio", t);
 			}
 		} finally {
 			buffering.set(false);
