@@ -1,7 +1,25 @@
+# Gradle e arquivos de compilacao
 .gradle/
 build/
+bin/
+out/
+
+# Ambiente de execucao e testes do Minecraft
 run/
+
+# Binarios e arquivos de distribuicao local
+dist/
+
+# Configuracoes de IDEs (VS Code, IntelliJ, Eclipse)
 .idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Logs, backups e temporarios
 *.log
-backup_buildaid_pre_music.zip
+*.zip
 node_modules/
+.DS_Store
+Thumbs.db
