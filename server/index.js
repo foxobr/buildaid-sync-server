@@ -274,30 +274,38 @@ async function resolveYouTubeAudio(videoId) {
   const instances = [
     'https://invidious.nerdvpn.de',
     'https://inv.tux.pizza',
-    'https://vid.puffyan.us'
+    'https://invidious.protokolla.fi',
+    'https://vid.puffyan.us',
+    'https://invidious.drgns.space'
   ];
 
   for (const base of instances) {
     try {
-      const data = await fetchJson(`${base}/api/v1/videos/${videoId}`);
-      if (data && data.title) {
-        let streamUrl = '';
-        if (Array.isArray(data.adaptiveFormats)) {
-          const audioFormat = data.adaptiveFormats.find(f => (f.type || '').includes('audio/'));
-          if (audioFormat && audioFormat.url) streamUrl = audioFormat.url;
-        }
-        if (!streamUrl && Array.isArray(data.formatStreams) && data.formatStreams.length > 0) {
-          streamUrl = data.formatStreams[0].url || '';
-        }
+      const response = await fetch(`${base}/api/v1/videos/${videoId}`, {
+        headers: { 'User-Agent': 'BuildAid-SyncServer/1.0', 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(4000)
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.title) {
+          let streamUrl = '';
+          if (Array.isArray(data.adaptiveFormats)) {
+            const audioFormat = data.adaptiveFormats.find(f => (f.type || '').includes('audio/'));
+            if (audioFormat && audioFormat.url) streamUrl = audioFormat.url;
+          }
+          if (!streamUrl && Array.isArray(data.formatStreams) && data.formatStreams.length > 0) {
+            streamUrl = data.formatStreams[0].url || '';
+          }
 
-        return {
-          id: videoId,
-          title: data.title || 'YouTube',
-          author: data.author || 'YouTube',
-          durationSeconds: data.lengthSeconds || 0,
-          streamUrl: streamUrl,
-          thumbnailUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-        };
+          return {
+            id: videoId,
+            title: data.title || 'YouTube',
+            author: data.author || 'YouTube',
+            durationSeconds: data.lengthSeconds || 0,
+            streamUrl: streamUrl,
+            thumbnailUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+          };
+        }
       }
     } catch (ignored) {
     }
@@ -311,22 +319,6 @@ async function resolveYouTubeAudio(videoId) {
     streamUrl: '',
     thumbnailUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
   };
-}
-
-function fetchJson(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'BuildAid-SyncServer/1.0' } }, (res) => {
-      let body = '';
-      res.on('data', chunk => body += chunk);
-      res.on('end', () => {
-        try {
-          resolve(JSON.parse(body));
-        } catch (e) {
-          reject(e);
-        }
-      });
-    }).on('error', reject);
-  });
 }
 
 server.listen(PORT, () => {

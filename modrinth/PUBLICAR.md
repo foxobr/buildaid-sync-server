@@ -1,8 +1,8 @@
-# Guia de publicação no Modrinth — BuildAid 1.1.0
+# Guia de publicação no Modrinth — BuildAid 1.2.3
 
-Arquivo para enviar: **`build/libs/buildaid-1.1.0+26.2.jar`**
+Arquivo para enviar: **`build/libs/buildaid-1.2.3+26.2.jar`**
 
-> Já publicou a 1.0.0? Então pule os passos 1 e 2 — vá direto para o **passo 3** e envie a versão
+> Já publicou a 1.0.0 ou 1.1.0? Então pule os passos 1 e 2 — vá direto para o **passo 3** e envie a versão
 > nova no projeto que já existe. O texto da descrição continua valendo; vale só revisar o resumo se
 > quiser citar hologramas e formas.
 
@@ -29,13 +29,13 @@ Arquivo para enviar: **`build/libs/buildaid-1.1.0+26.2.jar`**
 **Em inglês** — recomendado, alcança muito mais gente:
 
 ```
-Pin reference images over your screen with adjustable opacity, plus Litematica-style area selection and a building grid. Client-side, one menu, four keys.
+Reference images with opacity, 3D geometric guides, and synced music channels for building together. Client-side, one menu, four keys.
 ```
 
 **Em português**, se preferir:
 
 ```
-Fixe imagens de referência sobre a tela com opacidade ajustável, mais seleção de área estilo Litematica e grade de construção. Client-side, um menu, quatro teclas.
+Imagens de referência com opacidade, guias geométricos 3D e canais de música sincronizada para construir juntos. Client-side, um menu.
 ```
 
 ---
@@ -65,7 +65,7 @@ alguém a baixar, e ajuda muito na revisão. Sugestões do que fotografar (F2 no
 `.minecraft/screenshots`):
 
 1. O painel de referência aberto sobre uma construção, com opacidade média — é o que vende o mod.
-2. O menu (`G`) na aba Imagens, com a galeria cheia.
+2. The menu (`G`) na aba Imagens, com a galeria cheia.
 3. A seleção de área ligada, mostrando a caixa e os marcadores azul e laranja.
 
 ---

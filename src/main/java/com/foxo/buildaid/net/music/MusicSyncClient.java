@@ -33,7 +33,7 @@ public final class MusicSyncClient implements WebSocket.Listener {
 			.build();
 
 	private WebSocket webSocket;
-	private String currentServerUrl = "ws://localhost:3000";
+	private String currentServerUrl = "wss://buildaid-sync-server.onrender.com";
 	private String currentRoomId = "";
 	private String playerName = "Player";
 

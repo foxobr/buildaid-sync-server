@@ -158,7 +158,7 @@
 	"buildaid.menu.music_join": "Join",
 	"buildaid.menu.music_leave": "Leave (Solo)",
 	"buildaid.menu.music_server": "WebSocket Server",
-	"buildaid.menu.music_server_hint": "ws://localhost:3000",
+	"buildaid.menu.music_server_hint": "wss://buildaid-sync-server.onrender.com",
 	"buildaid.menu.music_volume": "Volume: %s%%",
 	"buildaid.menu.music_hud": "In-Game Mini Player",
 	"buildaid.menu.music_url": "Music URL",

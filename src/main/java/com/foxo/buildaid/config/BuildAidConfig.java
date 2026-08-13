@@ -225,7 +225,7 @@ public final class BuildAidConfig {
 	}
 
 	public static final class Music {
-		public String serverUrl = "ws://localhost:3000";
+		public String serverUrl = "wss://buildaid-sync-server.onrender.com";
 		public String roomId = "";
 		public boolean autoServerRoom = true;
 		public int volume = 50;
