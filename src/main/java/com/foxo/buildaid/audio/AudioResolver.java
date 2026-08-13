@@ -83,23 +83,22 @@ public final class AudioResolver {
 	}
 
 	private static CompletableFuture<TrackInfo> resolveYouTube(String videoId, String origUrl, String addedBy, String relayServerUrl) {
-		// 1. Se houver um servidor de relay configurado com endpoint de resolucao (/resolve?v=ID)
-		if (relayServerUrl != null && !relayServerUrl.isBlank() && relayServerUrl.startsWith("http")) {
-			String endpoint = relayServerUrl.replaceAll("/+$", "") + "/api/resolve?v=" + videoId;
-			return fetchJson(endpoint).thenApply(json -> {
-				if (json != null && json.has("streamUrl")) {
-					String streamUrl = json.get("streamUrl").getAsString();
-					String title = json.has("title") ? json.get("title").getAsString() : "YouTube (" + videoId + ")";
-					String author = json.has("author") ? json.get("author").getAsString() : "YouTube";
-					long duration = json.has("durationSeconds") ? json.get("durationSeconds").getAsLong() : 0;
-					String thumb = json.has("thumbnailUrl") ? json.get("thumbnailUrl").getAsString() : "";
-					return new TrackInfo(videoId, title, author, origUrl, streamUrl, duration, addedBy, thumb);
-				}
-				throw new RuntimeException("Resposta do relay invalida");
-			}).exceptionallyCompose(err -> resolveInvidiousFallback(videoId, origUrl, addedBy));
-		}
+		String serverEndpoint = (relayServerUrl != null && !relayServerUrl.isBlank() && relayServerUrl.startsWith("http"))
+				? relayServerUrl.replaceAll("/+$", "")
+				: "https://buildaid-sync-server.onrender.com";
 
-		return resolveInvidiousFallback(videoId, origUrl, addedBy);
+		String endpoint = serverEndpoint + "/api/resolve?v=" + videoId;
+		return fetchJson(endpoint).thenApply(json -> {
+			if (json != null && json.has("streamUrl") && !json.get("streamUrl").getAsString().isBlank()) {
+				String streamUrl = json.get("streamUrl").getAsString();
+				String title = json.has("title") ? json.get("title").getAsString() : "YouTube (" + videoId + ")";
+				String author = json.has("author") ? json.get("author").getAsString() : "YouTube";
+				long duration = json.has("durationSeconds") ? json.get("durationSeconds").getAsLong() : 0;
+				String thumb = json.has("thumbnailUrl") ? json.get("thumbnailUrl").getAsString() : "";
+				return new TrackInfo(videoId, title, author, origUrl, streamUrl, duration, addedBy, thumb);
+			}
+			throw new RuntimeException("Stream de audio indisponivel no servidor de relay");
+		}).exceptionallyCompose(err -> resolveInvidiousFallback(videoId, origUrl, addedBy));
 	}
 
 	private static CompletableFuture<TrackInfo> resolveInvidiousFallback(String videoId, String origUrl, String addedBy) {
@@ -108,17 +107,7 @@ public final class AudioResolver {
 
 	private static CompletableFuture<TrackInfo> attemptInvidiousInstances(String videoId, String origUrl, String addedBy, int index) {
 		if (index >= INVIDIOUS_INSTANCES.size()) {
-			// Se todas as APIs publicas falharem no momento, retorna metadado basico
-			return CompletableFuture.completedFuture(new TrackInfo(
-					videoId,
-					"YouTube (" + videoId + ")",
-					"Vídeo do YouTube",
-					origUrl,
-					"", // Sem stream direto disponivel
-					0,
-					addedBy,
-					"https://img.youtube.com/vi/" + videoId + "/hqdefault.jpg"
-			));
+			return CompletableFuture.failedFuture(new RuntimeException("buildaid.msg.music_stream_unavailable"));
 		}
 
 		String baseUrl = INVIDIOUS_INSTANCES.get(index);
@@ -155,6 +144,10 @@ public final class AudioResolver {
 						streamUrl = first.get("url").getAsString();
 					}
 				}
+			}
+
+			if (streamUrl.isBlank()) {
+				throw new RuntimeException("Sem streamUrl");
 			}
 
 			return new TrackInfo(videoId, title, author, origUrl, streamUrl, duration, addedBy, thumb);

@@ -355,6 +355,11 @@ public final class BuildAidConfig {
 		if (infoHud == null) {
 			infoHud = new InfoHud();
 		}
+		if (music == null) {
+			music = new Music();
+		} else if (music.serverUrl == null || music.serverUrl.isBlank() || music.serverUrl.equals("ws://localhost:3000")) {
+			music.serverUrl = "wss://buildaid-sync-server.onrender.com";
+		}
 	}
 
 	/** Traz as preferencias da v1 (secao {@code buildKit}) para as secoes novas. */

@@ -16,6 +16,8 @@
   "author": "FoxoBr",
   "license": "MIT",
   "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
+    "play-dl": "^1.9.7",
     "ws": "^8.18.0"
   }
 }

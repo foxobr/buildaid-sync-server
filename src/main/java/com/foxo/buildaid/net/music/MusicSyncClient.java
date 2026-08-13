@@ -207,7 +207,7 @@ public final class MusicSyncClient implements WebSocket.Listener {
 
 		AudioResolver.resolve(url, user, httpUrlFromWs(currentServerUrl))
 				.thenAccept(track -> {
-					if (track.isEmpty()) {
+					if (track.isEmpty() || track.streamUrl().isBlank()) {
 						Feedback.error("buildaid.msg.music_resolve_failed");
 						return;
 					}
