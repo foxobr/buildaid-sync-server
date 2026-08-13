@@ -10,6 +10,9 @@ run/
 # Binarios e arquivos de distribuicao local
 dist/
 
+# Documentos internos de publicacao
+modrinth/
+
 # Configuracoes de IDEs (VS Code, IntelliJ, Eclipse)
 .idea/
 .vscode/
