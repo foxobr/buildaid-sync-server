@@ -23,6 +23,7 @@ modrinth/
 # Logs, backups e temporarios
 *.log
 *.zip
+*-player-script.js
 node_modules/
 .DS_Store
 Thumbs.db
