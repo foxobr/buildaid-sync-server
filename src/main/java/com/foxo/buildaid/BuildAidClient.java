@@ -53,7 +53,11 @@ public class BuildAidClient implements ClientModInitializer {
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, id("music_hud"),
 				new com.foxo.buildaid.hud.MusicHudElement());
 
-		com.foxo.buildaid.audio.AudioPlayer.get().setVolume(BuildAidConfig.get().music.volume / 100.0f);
+		try {
+			com.foxo.buildaid.audio.AudioPlayer.get().setVolume(BuildAidConfig.get().music.volume / 100.0f);
+		} catch (Throwable t) {
+			BuildAid.LOGGER.error("Falha ao inicializar o AudioPlayer no arranque do cliente", t);
+		}
 
 		net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			com.foxo.buildaid.net.music.MusicSyncClient.get().autoJoinCurrentServer(client);

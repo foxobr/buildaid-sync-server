@@ -65,6 +65,12 @@ dependencies {
 	include "org.jsoup:jsoup:1.17.2"
 	include "com.grack:nanojson:1.9"
 
+	// Motor JavaScript Rhino (usado pelo decifrador de assinaturas do YouTube)
+	implementation "org.mozilla:rhino-engine:1.7.15"
+	include "org.mozilla:rhino-engine:1.7.15"
+	implementation "org.mozilla:rhino:1.7.15"
+	include "org.mozilla:rhino:1.7.15"
+
 	// Cloth Config traz a propria copia da Fabric API; excluir evita conflito de versao.
 	implementation("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}") {
 		exclude group: 'net.fabricmc.fabric-api'
