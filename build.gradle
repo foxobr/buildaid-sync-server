@@ -47,14 +47,14 @@ dependencies {
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
 	// Motor de Audio Avancado: LavaPlayer + YouTube Source e dependencias transitivas
-	implementation "dev.arbjerg:lavaplayer:2.2.3"
-	include "dev.arbjerg:lavaplayer:2.2.3"
+	implementation "dev.arbjerg:lavaplayer:2.2.7"
+	include "dev.arbjerg:lavaplayer:2.2.7"
 
-	implementation "dev.arbjerg:lava-common:2.2.3"
-	include "dev.arbjerg:lava-common:2.2.3"
+	implementation "dev.arbjerg:lava-common:2.2.7"
+	include "dev.arbjerg:lava-common:2.2.7"
 
-	implementation "dev.lavalink.youtube:common:1.11.4"
-	include "dev.lavalink.youtube:common:1.11.4"
+	implementation "dev.lavalink.youtube:common:1.18.1"
+	include "dev.lavalink.youtube:common:1.18.1"
 
 	include "org.apache.httpcomponents:httpclient:4.5.14"
 	include "org.apache.httpcomponents:httpcore:4.4.16"
