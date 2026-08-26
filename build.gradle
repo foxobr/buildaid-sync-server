@@ -21,14 +21,6 @@ repositories {
 		name = 'TerraformersMC'
 		url = 'https://maven.terraformersmc.com/releases/'
 	}
-	maven {
-		name = 'Lavalink'
-		url = 'https://maven.lavalink.dev/releases'
-	}
-	maven {
-		name = 'JitPack'
-		url = 'https://jitpack.io'
-	}
 }
 
 loom {
@@ -45,34 +37,6 @@ dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-
-	// Motor de Audio Avancado: LavaPlayer + YouTube Source e dependencias transitivas
-	implementation "dev.arbjerg:lavaplayer:2.2.7"
-	include "dev.arbjerg:lavaplayer:2.2.7"
-
-	implementation "dev.arbjerg:lavaplayer-natives:2.2.7"
-	include "dev.arbjerg:lavaplayer-natives:2.2.7"
-
-	implementation "dev.arbjerg:lava-common:2.2.7"
-	include "dev.arbjerg:lava-common:2.2.7"
-
-	implementation "dev.lavalink.youtube:common:1.18.1"
-	include "dev.lavalink.youtube:common:1.18.1"
-
-	include "org.apache.httpcomponents:httpclient:4.5.14"
-	include "org.apache.httpcomponents:httpcore:4.4.16"
-	include "commons-logging:commons-logging:1.2"
-	include "com.fasterxml.jackson.core:jackson-core:2.15.2"
-	include "com.fasterxml.jackson.core:jackson-databind:2.15.2"
-	include "com.fasterxml.jackson.core:jackson-annotations:2.15.2"
-	include "org.jsoup:jsoup:1.17.2"
-	include "com.grack:nanojson:1.9"
-
-	// Motor JavaScript Rhino (usado pelo decifrador de assinaturas do YouTube)
-	implementation "org.mozilla:rhino-engine:1.7.15"
-	include "org.mozilla:rhino-engine:1.7.15"
-	implementation "org.mozilla:rhino:1.7.15"
-	include "org.mozilla:rhino:1.7.15"
 
 	// Cloth Config traz a propria copia da Fabric API; excluir evita conflito de versao.
 	implementation("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}") {

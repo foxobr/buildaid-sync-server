@@ -18,8 +18,13 @@ public enum ShapeType {
 	ROOF_GABLE,
 	ROOF_HIP,
 	HELIX,
+	SPIRAL_STAIR,
 	ARCH,
-	TORUS;
+	TORUS,
+	DIAMOND,
+	BEZIER,
+	OCTAGON,
+	FENCE;
 
 	public String translationKey() {
 		return "buildaid.shape." + name().toLowerCase(Locale.ROOT);

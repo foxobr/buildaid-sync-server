@@ -35,4 +35,25 @@ public final class NativeFilePicker {
 			);
 		}
 	}
+
+	/** Variante para abrir um schematic do Litematica (.litematic). Mesma regra:
+	 *  bloqueia a thread que chamar, entao so usar fora da render thread. */
+	public static String openLitematic() {
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			String[] patterns = {"*.litematic"};
+			PointerBuffer filters = stack.mallocPointer(patterns.length);
+			for (String pattern : patterns) {
+				filters.put(stack.UTF8(pattern));
+			}
+			filters.flip();
+
+			return TinyFileDialogs.tinyfd_openFileDialog(
+					"BuildAid - importar schematic (.litematic)",
+					"",
+					filters,
+					"Schematic Litematica (*.litematic)",
+					false
+			);
+		}
+	}
 }

@@ -66,45 +66,34 @@ public final class ShapeGuide {
 	// ---------------------------------------------------------------- cache
 
 	private static String key(BuildAidConfig.Shape s) {
+		// layerMode/activeLayer SAO de proposito DEIXADOS DE FORA: eles so filtram o desenho
+		// (em collect), nunca a malha. Se entrassem na chave, arrastar o slider de camada
+		// regeraria a malha inteira a cada tick -- e uma esfera oca de raio 20 leva ~240 ms.
 		return s.type + "|" + s.width + "|" + s.height + "|" + s.depth + "|" + s.hollow
-				+ "|" + s.thickness + "|" + s.rotation + "|" + s.pitch + "|" + s.fillColor;
+				+ "|" + s.thickness + "|" + s.rotation + "|" + s.pitch + "|" + s.fillColor
+				+ "|" + s.colorPreset
+				+ "|" + s.wireframe;
 	}
 
 	/** Malha pronta, ou {@code null} enquanto ela e construida em segundo plano. */
 	public static ShapeGenerator.Mesh meshFor(BuildAidConfig.Shape config) {
 		String cacheKey = key(config);
-
-		ShapeGenerator.Mesh ready = MESHES.get(cacheKey);
-		if (ready != null) {
-			return ready;
+		ShapeGenerator.Mesh cached = MESHES.get(cacheKey);
+		if (cached != null) {
+			return cached;
 		}
 
-		// add() so devolve true uma vez: garante uma unica construcao por conjunto de parametros.
 		if (PENDING.add(cacheKey)) {
 			BuildAidConfig.Shape snapshot = config.copy();
-			CompletableFuture
-					.supplyAsync(() -> {
-						long start = System.nanoTime();
-						ShapeGenerator.Mesh built = ShapeGenerator.build(snapshot);
-						BuildAid.LOGGER.info("Forma {} gerada: {} blocos, {} faces em {} ms",
-								snapshot.type, built.blockCount(), built.faceCount(),
-								(System.nanoTime() - start) / 1_000_000);
-						return built;
-					}, MESH_POOL)
-					.thenAccept(built -> {
-						MESHES.put(cacheKey, built);
-						PENDING.remove(cacheKey);
-						if (built.isEmpty()) {
-							Feedback.error("buildaid.msg.shape_too_big");
-						}
-					})
-					.exceptionally(error -> {
-						BuildAid.LOGGER.error("Falha ao gerar a forma {}", cacheKey, error);
-						PENDING.remove(cacheKey);
-						return null;
-					});
+			MESH_POOL.execute(() -> {
+				try {
+					ShapeGenerator.Mesh generated = ShapeGenerator.build(snapshot);
+					MESHES.put(cacheKey, generated);
+				} finally {
+					PENDING.remove(cacheKey);
+				}
+			});
 		}
-
 		return null;
 	}
 
@@ -122,6 +111,20 @@ public final class ShapeGuide {
 	public static int[] blocksPerLayer(BuildAidConfig.Shape config) {
 		ShapeGenerator.Mesh mesh = MESHES.get(key(config));
 		return mesh == null ? new int[0] : mesh.blocksPerLayer();
+	}
+
+	/**
+	 * Se a face na altura {@code layer} deve ser desenhada, dado o modo de fatia.
+	 *
+	 * <p>Modos (ver {@code layerModeName} no menu): 0 = todas as camadas; 1 = so a camada
+	 * ativa; 2 = da base ate a camada ativa (inclusive).
+	 */
+	private static boolean layerVisible(int mode, int layer, int activeLayer) {
+		return switch (mode) {
+			case 1 -> layer == activeLayer;
+			case 2 -> layer <= activeLayer;
+			default -> true;
+		};
 	}
 
 	/** Esquece tudo (usado quando a config muda por fora). */
@@ -204,21 +207,31 @@ public final class ShapeGuide {
 			float offsetX = (float) (config.x + 0.5 - mesh.sizeX() / 2.0 - camera.x);
 			float offsetY = (float) (config.y - camera.y);
 			float offsetZ = (float) (config.z + 0.5 - mesh.sizeZ() / 2.0 - camera.z);
+			boolean isWireframe = config.wireframe;
+			int mode = config.layerMode;
+			int active = config.activeLayer;
+			int[] fl = mesh.faceLayer();
+			float[] p = mesh.positions();
+			int[] colors = mesh.colors();
 
 			context.submitNodeCollector().submitCustomGeometry(
 					context.poseStack(),
 					RenderTypes.debugFilledBox(),
 					(pose, consumer) -> {
-						float[] p = mesh.positions();
-						int[] colors = mesh.colors();
 						for (int face = 0; face < mesh.faceCount(); face++) {
+							if (!layerVisible(mode, fl[face], active)) {
+								continue;
+							}
 							int o = face * 12;
+							int faceColor = isWireframe
+									? (0x12000000 | (colors[face] & 0x00FFFFFF))
+									: colors[face];
 							WorldGeometry.coloredQuad(pose, consumer,
 									p[o] + offsetX, p[o + 1] + offsetY, p[o + 2] + offsetZ,
 									p[o + 3] + offsetX, p[o + 4] + offsetY, p[o + 5] + offsetZ,
 									p[o + 6] + offsetX, p[o + 7] + offsetY, p[o + 8] + offsetZ,
 									p[o + 9] + offsetX, p[o + 10] + offsetY, p[o + 11] + offsetZ,
-									colors[face]);
+									faceColor);
 						}
 					});
 		}

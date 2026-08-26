@@ -35,13 +35,14 @@ public final class ShapeGenerator {
 	 *
 	 * @param positions      12 floats por face (4 vertices x XYZ)
 	 * @param colors         uma cor ARGB por face, ja sombreada
+	 * @param faceLayer      altura (Y local, 0=base) de cada face -- usada para fatiar a forma
 	 * @param blocksPerLayer quantos blocos em cada altura, do chao para cima -- e assim que se
 	 *                       constroi de verdade, camada por camada
 	 */
-	public record Mesh(float[] positions, int[] colors, int[] blocksPerLayer, int faceCount,
-			int blockCount, int sizeX, int sizeY, int sizeZ) {
+	public record Mesh(float[] positions, int[] colors, int[] faceLayer, int[] blocksPerLayer,
+			int faceCount, int blockCount, int sizeX, int sizeY, int sizeZ) {
 		public static final Mesh EMPTY =
-				new Mesh(new float[0], new int[0], new int[0], 0, 0, 0, 0, 0);
+				new Mesh(new float[0], new int[0], new int[0], new int[0], 0, 0, 0, 0, 0);
 
 		public boolean isEmpty() {
 			return faceCount == 0;
@@ -74,7 +75,9 @@ public final class ShapeGenerator {
 		boolean[] filled = voxelize(type, width, height, depth, sizeX, sizeY, sizeZ, cos, sin,
 				Math.max(2, config.pitch), Math.max(1, config.thickness));
 
-		boolean[] visible = config.hollow
+		// HELIX e SPIRAL_STAIR sao fios/pilares: a erosao de "oco" apagaria uma linha de
+		// 1 bloco inteira (tudo tem vizinho em 6 lados), entao mantemos solido.
+		boolean[] visible = (config.hollow && type != ShapeType.HELIX && type != ShapeType.SPIRAL_STAIR)
 				? hollow(filled, sizeX, sizeY, sizeZ, config.thickness)
 				: filled;
 
@@ -146,21 +149,90 @@ public final class ShapeGenerator {
 			// Quatro aguas: recua nos dois eixos, entao o lado menor fecha antes e sobra a cumeeira.
 			case ROOF_HIP -> ax <= halfX - inset && az <= halfZ - inset;
 
-			// Escada espiral: a cada altura o degrau esta num angulo, e a celula entra se
-			// estiver perto do ponto do helicoide naquele angulo. O passo diz quantos blocos
-			// de altura uma volta completa sobe -- e o que define se da para subir.
-			case HELIX -> {
-				double angle = 2.0 * Math.PI * (y + 0.5) / pitch;
-				double dx = lx - halfX * Math.cos(angle);
-				double dz = lz - halfZ * Math.sin(angle);
-				yield Math.sqrt(dx * dx + dz * dz) <= Math.max(1.0, thickness);
-			}
+			// Escada espiral (fio decorativo): a cada altura o degrau esta num angulo, e a
+				// celula entra se estiver perto do ponto do helicoide naquele angulo. O passo
+				// diz quantos blocos de altura uma volta completa sobe.
+				case HELIX -> {
+					double angle = 2.0 * Math.PI * (y + 0.5) / pitch;
+					double dx = lx - halfX * Math.cos(angle);
+					double dz = lz - halfZ * Math.sin(angle);
+					yield Math.sqrt(dx * dx + dz * dz) <= Math.max(1.0, thickness);
+				}
+
+				// Escada em espiral de verdade: pilar central + degraus que sobem girando.
+				// O pilar e 2x2 no centro (todas as alturas); cada nivel tem um degrau num anel
+				// curto a partir do pilar, dentro de uma faixa angular perto do angulo ideal
+				// daquele nivel. pitch = altura por volta; thickness = profundidade do degrau.
+				case SPIRAL_STAIR -> {
+					double radial = Math.sqrt(lx * lx + lz * lz);
+					boolean column = Math.abs(lx) <= 0.5 && Math.abs(lz) <= 0.5;
+					double stairAngle = 2.0 * Math.PI * (y + 0.5) / pitch;
+					double cellAngle = Math.atan2(lz, lx);
+					double diff = Math.abs(stairAngle - cellAngle);
+					diff = Math.min(diff, 2.0 * Math.PI - diff);
+					double angularHalf = Math.max(0.35, Math.PI / pitch);
+					double treadDepth = Math.max(1.0, thickness);
+					boolean tread = radial > 0.7 && radial <= 0.7 + treadDepth && diff <= angularHalf;
+					yield column || tread;
+				}
 
 			// Arco: meia elipse no plano X/Y esticada ao longo de Z. Oco vira o arco, cheio a abobada.
-			case ARCH -> sq(lx / halfX) + sq((y + 0.5) / height) <= 1.0 && az <= halfZ;
+				case ARCH -> sq(lx / halfX) + sq((y + 0.5) / height) <= 1.0 && az <= halfZ;
 
-			// Torus: distancia ao anel central menor que o raio menor.
-			case TORUS -> {
+				case DIAMOND -> Math.abs(lx) / halfX + Math.abs(lz) / halfZ <= 1.0 && y >= 0 && y < height;
+
+				case OCTAGON -> {
+							// max + min * 0.707 <= halfX (0.707 ~ 1/sqrt(2) para octagono regular)
+							yield Math.max(ax, az) + Math.min(ax, az) * 0.707107 <= halfX;
+						}
+
+				case FENCE -> {
+							// Fence: vertical posts every 4 blocks with gaps, and horizontal caps at half height
+							boolean isPostX = (int) (lx + halfX) % 4 < 2;  // posts at x positions 0,1 and 4,5 etc.
+							boolean isPostZ = (int) (lz + halfZ) % 4 < 2;  // posts at z positions 0,1 and 4,5 etc.
+							// Posts go full height, caps at half height around posts
+							boolean isLowerHalf = y < height / 2;
+							boolean isUpperHalf = y >= height / 2;
+							// Horizontal rail between posts at half height
+							boolean inRailZone = Math.abs(lx) < halfX - 1 && Math.abs(lz) < halfZ - 1 && y == height / 2;
+							// Post top (cap at top of post)
+							boolean postTop = isLowerHalf && isUpperHalf && y == height - 1;
+							// Simple: post is filled if within post area at any height
+							boolean isPost = isPostX || isPostZ;
+							yield isPost || inRailZone || postTop;
+						}
+
+						case BEZIER -> {
+				         double halfXVal = halfX;
+				         double thicknessSq = (thickness / 2.0) * (thickness / 2.0);
+				         double minDistSq = 1e9;
+				         int samples = 20; // fixed sample count for the Bezier curve
+				         double tStep = 1.0 / samples;
+				         // Control points for cubic Bezier in X/Z plane:
+				         // P0 = (-halfX, 0), P3 = (halfX, 0)
+				         // P1 = (ctrlX, ctrlZ), P2 = (-ctrlX, ctrlZ) -- curvature controlled by height
+				         double ctrlX = halfXVal / 3.0;
+				         double ctrlZ = height / 3.0;
+				         for (int sampleIdx = 0; sampleIdx <= samples; sampleIdx++) {
+				            double tSample = sampleIdx * tStep;
+				            double invT = 1.0 - tSample;
+				            // B(t) = (1-t)^3*P0 + 3(1-t)^2*t*P1 + 3(1-t)*t^2*P2 + t^3*P3
+				            double bx = Math.pow(invT, 3) * (-halfXVal) + 
+				                        3 * Math.pow(invT, 2) * tSample * ctrlX + 
+				                        3 * invT * Math.pow(tSample, 2) * (-ctrlX) + 
+				                        Math.pow(tSample, 3) * (halfXVal);
+				            double bz = Math.pow(invT, 3) * 0.0 + 
+				                        3 * Math.pow(invT, 2) * tSample * ctrlZ + 
+				                        3 * invT * Math.pow(tSample, 2) * ctrlZ + 
+				                        Math.pow(tSample, 3) * 0.0;
+				            double distSq = Math.pow(lx - bx, 2) + Math.pow(lz - bz, 2);
+				            if (distSq < minDistSq) minDistSq = distSq;
+				         }
+				         yield minDistSq <= thicknessSq;
+				      }
+
+				   // Torus: distancia ao anel central menor que o raio menor.
+				case TORUS -> {
 				double majorRadius = (halfX + halfZ) / 2.0;
 				double minorRadius = Math.max(1.0, thickness);
 				double ringDistance = Math.sqrt(lx * lx + lz * lz) - majorRadius;
@@ -249,6 +321,7 @@ public final class ShapeGenerator {
 
 		float[] positions = new float[faceCount * 12];
 		int[] colors = new int[faceCount];
+		int[] faceLayer = new int[faceCount];
 		int face = 0;
 
 		for (int y = 0; y < sizeY; y++) {
@@ -259,28 +332,29 @@ public final class ShapeGenerator {
 					}
 
 					if (!solid(voxels, x, y - 1, z, sizeX, sizeY, sizeZ)) {
-						face = writeFace(positions, colors, face, x, y, z, 0, fillColor, SHADE_DOWN);
+						face = writeFace(positions, colors, faceLayer, face, x, y, z, 0, fillColor, SHADE_DOWN);
 					}
 					if (!solid(voxels, x, y + 1, z, sizeX, sizeY, sizeZ)) {
-						face = writeFace(positions, colors, face, x, y, z, 1, fillColor, SHADE_UP);
+						face = writeFace(positions, colors, faceLayer, face, x, y, z, 1, fillColor, SHADE_UP);
 					}
 					if (!solid(voxels, x, y, z - 1, sizeX, sizeY, sizeZ)) {
-						face = writeFace(positions, colors, face, x, y, z, 2, fillColor, SHADE_NORTH_SOUTH);
+						face = writeFace(positions, colors, faceLayer, face, x, y, z, 2, fillColor, SHADE_NORTH_SOUTH);
 					}
 					if (!solid(voxels, x, y, z + 1, sizeX, sizeY, sizeZ)) {
-						face = writeFace(positions, colors, face, x, y, z, 3, fillColor, SHADE_NORTH_SOUTH);
+						face = writeFace(positions, colors, faceLayer, face, x, y, z, 3, fillColor, SHADE_NORTH_SOUTH);
 					}
 					if (!solid(voxels, x - 1, y, z, sizeX, sizeY, sizeZ)) {
-						face = writeFace(positions, colors, face, x, y, z, 4, fillColor, SHADE_EAST_WEST);
+						face = writeFace(positions, colors, faceLayer, face, x, y, z, 4, fillColor, SHADE_EAST_WEST);
 					}
 					if (!solid(voxels, x + 1, y, z, sizeX, sizeY, sizeZ)) {
-						face = writeFace(positions, colors, face, x, y, z, 5, fillColor, SHADE_EAST_WEST);
+						face = writeFace(positions, colors, faceLayer, face, x, y, z, 5, fillColor, SHADE_EAST_WEST);
 					}
 				}
 			}
 		}
 
-		return new Mesh(positions, colors, blocksPerLayer, faceCount, blockCount, sizeX, sizeY, sizeZ);
+		return new Mesh(positions, colors, faceLayer, blocksPerLayer, faceCount, blockCount,
+				sizeX, sizeY, sizeZ);
 	}
 
 	private static int exposedFaces(boolean[] v, int x, int y, int z, int sx, int sy, int sz) {
@@ -307,7 +381,7 @@ public final class ShapeGenerator {
 	}
 
 	/** Escreve os 4 vertices de uma face do cubo unitario em (x,y,z). */
-	private static int writeFace(float[] positions, int[] colors, int face,
+	private static int writeFace(float[] positions, int[] colors, int[] faceLayer, int face,
 			int x, int y, int z, int side, int fillColor, float shade) {
 		int o = face * 12;
 		float x0 = x;
@@ -327,6 +401,7 @@ public final class ShapeGenerator {
 		}
 
 		colors[face] = shaded(fillColor, shade);
+		faceLayer[face] = y;
 		return face + 1;
 	}
 

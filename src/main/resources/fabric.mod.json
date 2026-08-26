@@ -3,7 +3,7 @@
 	"id": "buildaid",
 	"version": "${version}",
 	"name": "BuildAid",
-	"description": "Imagens de referência com opacidade e seleção de área para construir.",
+	"description": "Imagens de referência flutuantes, hologramas no mundo, guias geométricos, seletor de cores com sugestão de blocos e anotações na tela. 100% client-side.",
 	"authors": [
 		"FoxoBr"
 	],

@@ -41,7 +41,7 @@ public class ModButton extends AbstractWidget {
 			textColor = Theme.TEXT_DISABLED;
 		} else {
 			background = switch (style) {
-				case PRIMARY -> hovered ? Theme.ACCENT_HOVER : Theme.ACCENT;
+				case PRIMARY -> hovered ? Theme.accentHover() : Theme.accent();
 				case DANGER -> hovered ? Theme.DANGER_HOVER : Theme.DANGER;
 				case NORMAL -> hovered ? Theme.SURFACE_HOVER : Theme.SURFACE;
 			};

@@ -49,7 +49,7 @@ public class ModToggle extends AbstractWidget {
 		int trackX = getX() + getWidth() - TRACK_WIDTH;
 		int trackY = getY() + (getHeight() - TRACK_HEIGHT) / 2;
 
-		int trackColor = !this.active ? Theme.SURFACE_DISABLED : on ? Theme.ACCENT : Theme.SURFACE_SUNKEN;
+		int trackColor = !this.active ? Theme.SURFACE_DISABLED : on ? Theme.accent() : Theme.SURFACE_SUNKEN;
 		Theme.roundedRect(graphics, trackX, trackY, TRACK_WIDTH, TRACK_HEIGHT, TRACK_HEIGHT / 2, trackColor);
 		if (!on) {
 			Theme.roundedOutline(graphics, trackX, trackY, TRACK_WIDTH, TRACK_HEIGHT, TRACK_HEIGHT / 2, Theme.BORDER);

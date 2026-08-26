@@ -61,7 +61,10 @@ public final class RefRenderer {
 			// Recorta tudo que passar das bordas do painel (importa quando ha zoom/pan).
 			graphics.enableScissor(x, y, x + width, y + height);
 			drawFitted(graphics, x, y, width, height, image,
-					panel.imageScale, panel.imageOffsetX, panel.imageOffsetY, opacity);
+					panel.imageScale, panel.imageOffsetX, panel.imageOffsetY, opacity, panel.rotation);
+			if (panel.showGrid) {
+				drawPixelGrid(graphics, x, y, width, height);
+			}
 			graphics.disableScissor();
 		}
 
@@ -76,7 +79,7 @@ public final class RefRenderer {
 			int screenHeight,
 			ImageLibrary.Loaded image,
 			float opacity) {
-		drawFitted(graphics, 0, 0, screenWidth, screenHeight, image, 1.0f, 0.0f, 0.0f, opacity);
+		drawFitted(graphics, 0, 0, screenWidth, screenHeight, image, 1.0f, 0.0f, 0.0f, opacity, 0);
 	}
 
 	/** Encaixa a imagem numa area arbitraria, recortando o que sobrar (usado na previa). */
@@ -85,19 +88,21 @@ public final class RefRenderer {
 			ImageLibrary.Loaded image,
 			float opacity) {
 		graphics.enableScissor(x, y, x + width, y + height);
-		drawFitted(graphics, x, y, width, height, image, 1.0f, 0.0f, 0.0f, opacity);
+		drawFitted(graphics, x, y, width, height, image, 1.0f, 0.0f, 0.0f, opacity, 0);
 		graphics.disableScissor();
 	}
 
 	/**
 	 * Encaixa a imagem na area mantendo a proporcao, aplicando zoom e deslocamento.
 	 * Nunca deforma a imagem -- referencia esticada nao serve para nada.
+	 *
+	 * @param rotationDegrees giro em passos retos (0/90/180/270), em torno do centro da imagem
 	 */
 	private static void drawFitted(GuiGraphicsExtractor graphics,
 			int areaX, int areaY, int areaWidth, int areaHeight,
 			ImageLibrary.Loaded image,
 			float zoom, float offsetX, float offsetY,
-			float opacity) {
+			float opacity, int rotationDegrees) {
 		int sourceWidth = image.width();
 		int sourceHeight = image.height();
 		if (sourceWidth <= 0 || sourceHeight <= 0) {
@@ -112,17 +117,32 @@ public final class RefRenderer {
 		int drawX = Math.round(areaX + (areaWidth - drawWidth) / 2.0f + offsetX);
 		int drawY = Math.round(areaY + (areaHeight - drawHeight) / 2.0f + offsetY);
 
-		// blit(pipeline, id, x, y, uOffset, vOffset, destW, destH, srcW, srcH, texW, texH, tint)
-		graphics.blit(
-				RenderPipelines.GUI_TEXTURED,
-				image.textureId(),
-				drawX, drawY,
-				0.0f, 0.0f,
-				drawWidth, drawHeight,
-				sourceWidth, sourceHeight,
-				sourceWidth, sourceHeight,
-				tint(opacity)
-		);
+		int rotation = Math.floorMod(rotationDegrees, 360);
+		var pose = graphics.pose();
+		if (rotation != 0) {
+			// Gira em torno do centro: sem isso a imagem orbitaria o canto (0,0) e sumiria.
+			pose.pushMatrix();
+			pose.rotateAbout((float) Math.toRadians(rotation),
+					drawX + drawWidth / 2.0f, drawY + drawHeight / 2.0f);
+		}
+
+		try {
+			// blit(pipeline, id, x, y, uOffset, vOffset, destW, destH, srcW, srcH, texW, texH, tint)
+			graphics.blit(
+					RenderPipelines.GUI_TEXTURED,
+					image.textureId(),
+					drawX, drawY,
+					0.0f, 0.0f,
+					drawWidth, drawHeight,
+					sourceWidth, sourceHeight,
+					sourceWidth, sourceHeight,
+					tint(opacity)
+			);
+		} finally {
+			if (rotation != 0) {
+				pose.popMatrix();
+			}
+		}
 	}
 
 	public static void drawBorder(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int color) {
@@ -130,5 +150,16 @@ public final class RefRenderer {
 		graphics.fill(x, y + height - 1, x + width, y + height, color);
 		graphics.fill(x, y + 1, x + 1, y + height - 1, color);
 		graphics.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
+	}
+
+	public static void drawPixelGrid(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
+		int step = 16;
+		int gridColor = 0x40FFFFFF;
+		for (int gx = x + step; gx < x + width; gx += step) {
+			graphics.fill(gx, y, gx + 1, y + height, gridColor);
+		}
+		for (int gy = y + step; gy < y + height; gy += step) {
+			graphics.fill(x, gy, x + width, gy + 1, gridColor);
+		}
 	}
 }

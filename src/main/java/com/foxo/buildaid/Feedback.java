@@ -26,6 +26,16 @@ public final class Feedback {
 		info(Component.translatable(translationKey, args));
 	}
 
+	/** Igual a {@link #info(Component)} mas fixa no chat (nao some como a action bar),
+	 *  util para listas detalhadas que o jogador precisa reler. */
+	public static void infoChat(Component message) {
+		send(message, "§b", false);
+	}
+
+	public static void infoChat(String translationKey, Object... args) {
+		infoChat(Component.translatable(translationKey, args));
+	}
+
 	public static void error(String translationKey, Object... args) {
 		error(Component.translatable(translationKey, args));
 	}

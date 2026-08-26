@@ -78,7 +78,7 @@ public class ModSlider extends AbstractSliderButton {
 		int filled = (int) Math.round(this.value * getWidth());
 		if (filled > 0) {
 			Theme.roundedRect(graphics, getX(), trackY, filled, trackHeight, 2,
-					this.active ? Theme.ACCENT : Theme.SURFACE_DISABLED);
+					this.active ? Theme.accent() : Theme.SURFACE_DISABLED);
 		}
 
 		int knobX = Math.clamp(getX() + filled - 3, getX(), getX() + getWidth() - 6);

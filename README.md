@@ -1,17 +1,16 @@
 <div align="center">
 
-# 🏗️ BuildAid 1.2.9
-**A ferramenta definitiva de auxílio a construção e canais de música sincronizada para Minecraft.**
+# 🏗️ BuildAid 1.5.0
+**A ferramenta definitiva e ultraleve de auxílio à construção para Minecraft.**
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-26.2-brightgreen.svg?style=for-the-badge&logo=minecraft)](https://fabricmc.net/)
 [![Fabric](https://img.shields.io/badge/Loader-Fabric-blue.svg?style=for-the-badge&logo=fabric)](https://fabricmc.net/)
 [![Java](https://img.shields.io/badge/Java-25-orange.svg?style=for-the-badge&logo=openjdk)](https://adoptium.net/)
-[![LavaPlayer](https://img.shields.io/badge/Audio-LavaPlayer%202.2.7-purple.svg?style=for-the-badge)](https://github.com/lavalink-devs/lavaplayer)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-*Um mod **100% client-side** para Minecraft 26.2 (Fabric) projetado para construtores, arquitetos e amigos que jogam e constroem juntos.*
+*Um mod **100% client-side** para Minecraft 26.2 (Fabric) projetado para construtores, arquitetos e jogadores que levam suas construções a sério.*
 
-[✨ Funcionalidades](#-funcionalidades) • [🎵 Motor de Música LavaPlayer](#-motor-de-música-lavaplayer--canais-sincronizados) • [⌨️ Teclas de Atalho](#️-teclas-de-atalho) • [📥 Instalação](#-instalação) • [🌐 Servidor na Nuvem](#-servidor-de-sincronização-na-nuvem)
+[✨ Funcionalidades](#-funcionalidades) • [📐 Guias Geométricos 3D](#-guias-geométricos-3d-15-formas) • [⌨️ Teclas de Atalho](#️-teclas-de-atalho) • [📥 Instalação](#-instalação)
 
 </div>
 
@@ -19,34 +18,28 @@
 
 ## 🌟 Visão Geral
 
-O **BuildAid** transforma a experiência de jogar e construir no Minecraft. Chega de dar **Alt+Tab** para conferir plantas, tutoriais, vídeos ou trocar de música no navegador. Tudo fica integrado diretamente dentro do jogo: painéis flutuantes de imagens, guias geométricos 3D com cálculo de blocos, sobreposição de pixel-art e um motor de **música sincronizada com LavaPlayer** (YouTube, SoundCloud, Web Rádios e arquivos de áudio) para você escutar com seus amigos em qualquer servidor!
+O **BuildAid** transforma a experiência de planejar e construir no Minecraft. Chega de dar **Alt+Tab** para conferir plantas, tutoriais ou calculadoras de círculos e esferas na web. Tudo fica integrado diretamente dentro do jogo: painéis flutuantes de imagens de referência, hologramas 3D no mundo em escala real, guias geométricos com **fatiador de camadas (Layer Slicer)** e **contagem de blocos**, sobreposição de pixel-art (Ghost Mode) e seleção de área inteligente com medições em tempo real!
 
 > [!NOTE]
-> **100% Client-Side:** Funciona no *Singleplayer* e em **qualquer servidor multiplayer** (Vanilla, Realms, Hypixel, Spigot, Paper, etc.) sem exigir nenhum mod ou plugin instalado no servidor.
+> **100% Client-Side & Ultraleve:** Funciona no *Singleplayer* e em **qualquer servidor multiplayer** (Vanilla, Realms, Hypixel, Spigot, Paper, etc.) sem exigir nenhum mod ou plugin instalado no servidor. O jar do mod possui apenas ~150 KB e zero impacto na performance!
 
 ---
 
 ## ✨ Funcionalidades
 
-### 🎵 Motor de Música LavaPlayer & Canais Sincronizados
-- **Suporte Nativo ao YouTube:** Cole links de vídeos, músicas oficiais VEVO, podcasts, transmissões ao vivo, shorts e playlists. O mod decodifica o áudio em tempo real com qualidade cristalina de 48.000 Hz Stereo.
-- **Multi-Plataformas:** Suporte nativo a **SoundCloud**, **Twitch**, **Bandcamp**, **Web Rádios 24/7 (Icecast/Shoutcast)** e arquivos diretos de áudio (`.mp3`, `.ogg`, `.flac`, `.wav`).
-- **Canais por Servidor Automáticos:** Ao entrar em qualquer servidor de Minecraft, o mod reúne automaticamente todos os jogadores daquele servidor no mesmo canal de áudio sincronizado.
-- **Salas Privadas Personalizadas:** Crie salas secretas com códigos personalizados para escutar apenas com seu grupo de amigos.
-- **Mini Player HUD:** Widget flutuante discreto com nome da faixa, autor, sala, tempo decorrido e barra de progresso.
-
 ### 🖼️ Painéis de Imagens de Referência Flutuantes
 - **Múltiplos Painéis Independentes:** Abra quantas abas de imagens precisar, cada uma com posição, escala e opacidade próprias.
-- **Ajuste na Tela sem Pausar:** Arraste, redimensione e dê zoom nas imagens em tempo real enquanto joga.
+- **Ajuste na Tela sem Pausar:** Arraste, redimensione, dê zoom e rotacione (<kbd>T</kbd> para girar 90°) as imagens em tempo real enquanto joga.
 - **Modo Overlay de Tela Cheia (Ghost Mode):** Projete a imagem semitransparente na tela inteira, ideal para decalque de pixel-art, fachadas e curvas complexas.
 - **Importação Instantânea:** Cole direto da Área de Transferência (`Ctrl+V`), abra arquivos do seu computador ou baixe por URL da web.
 
 ### 🌐 Hologramas 3D no Mundo
 - Projete imagens de referência como plantas dentro do mundo 3D em escala real de blocos (1:1).
 - Trave a proporção original da imagem e oriente para Norte, Sul, Leste, Oeste ou deitado no chão.
+- Movimente ou posicione olhando para os blocos com o cursor.
 
-### 📐 Guias Geométricos 3D (11 Formas)
-Gabaritos visuais em blocos com contagem automática de materiais e visualização por camadas de altura (Y):
+### 📐 Guias Geométricos 3D (18 Formas)
+Gabaritos visuais em blocos com contagem automática de materiais e **Fatiador de Camadas (Layer Slicer)** para construir passo a passo no Survival:
 - 📦 **Caixa / Cubo**
 - 🔘 **Cilindro**
 - 🌐 **Esfera**
@@ -58,14 +51,49 @@ Gabaritos visuais em blocos com contagem automática de materiais e visualizaç�
 - 🌀 **Escada espiral (Hélice)**
 - 🌉 **Arco / Abóbada**
 - 🍩 **Torus (Anel)**
+- ⬡ **Hexágono (6 lados)**
+- 🛑 **Octógono (8 lados)**
+- ⭕ **Círculo 2D no Chão**
+- 💠 **Diamante / Losango**
+- ⛪ **Arco Gótico / Ogival** — *Novo!*
+- 🚇 **Túnel / Cilindro Horizontal** — *Novo!*
+- 📐 **Prisma Triangular / Rampa** — *Novo!*
 
-### 📦 Seleção de Área Inteligente
-- Marque **Canto 1** e **Canto 2** mirando nos blocos (<kbd>M</kbd>) sem interferir no uso normal do mouse.
-- Medição em tempo real: largura, altura, profundidade, volume total de blocos e comprimento da diagonal.
+#### 🍰 Fatiador de Camadas (Layer Slicer)
+- **Modo Todas as Camadas:** Exibe a estrutura 3D completa.
+- **Modo Apenas Camada Y:** Isola e exibe exclusivamente a camada selecionada no slider para construção fácil camada por camada.
+- **Modo Até a Camada Y:** Exibe a construção do chão até a altura atual.
+- **Modo Aramado (Wireframe):** Visualize apenas as linhas de contorno das formas para construir o interior com visibilidade desobstruída.
+- **Paleta de Cores:** Escolha entre 8 estilos visuais (Ciano, Esmeralda, Ouro, Laranja, Rubi, Roxo, Branco e o exclusivo **Modo Arco-Íris** com cores por camada!).
 
-### 🏁 Grade de Construção & HUD Informativo
-- **Grid no Chão:** Grade alinhada aos blocos com destaque visual para bordas de chunks (a cada 16 blocos).
-- **HUD Informativo:** Coordenadas XYZ, direção da mira, bioma atual, nível de iluminação (bloco/céu), hora do mundo e medidor de FPS.
+### 📦 Seleção de Área, Escaneador de Materiais & Ferramentas
+- **📋 Escaneador de Materiais do Mundo:** Escaneie qualquer construção ou área selecionada no mundo para obter a contagem exata de todos os blocos necessários (em unidades e *packs* de 64!).
+- **🎯 Localizador de Centro Exato (Center Finder):** Destaca o centro exato da sua sala ou parede (1 bloco para ímpar ou 2 blocos para par) para nunca mais errar o alinhamento de portas e lustres.
+- **📏 Régua Rápida de Medição (Tape Measure):** Meça vãos e distâncias em tempo real com um feixe laser e contagem de blocos nos eixos XYZ (`ΔX`, `ΔY`, `ΔZ`).
+- **🎛️ Ajuste Fino & Expansão:** Botões rápidos na tela para mover a caixa selecionada nos eixos (+X, -X, +Y, -Y, +Z, -Z) e expandir/encolher sem precisar remarcar os cantos.
+- **Encaixar Forma na Seleção:** Gera qualquer gabarito geométrico exatamente dentro da sua área marcada com 1 clique.
+
+### 🎨 Cores, Gradientes & Projeção 3D (aba Cores)
+- **🖌️ Seletor de Cores estilo programa de pintura:** quadrado de saturação/brilho, barra de matiz e campo `#hex` sincronizados.
+- **🔍 Sugestão automática de blocos:** ao escolher uma cor, o mod lista os blocos mais próximos com amostra de cor — um clique define o **1º** ou o **último bloco do gradiente**, e `⚡ Gerar` monta a sequência completa.
+- **🗒️ Exportar p/ nota:** transforma o gradiente (ou a lista de sugestões) numa **anotação flutuante** na tela, com os nomes dos blocos no idioma do jogo.
+- **👁️ Projeção 3D da paleta no chão do mundo** (eixo X ou Z) e botão para equipar os blocos direto na hotbar (Criativo).
+
+### 🗒️ Anotações Flutuantes
+- Post-its de texto livre presos à tela, com vários ao mesmo tempo — cada um com posição, largura, opacidade e cor da barrinha lateral próprios.
+- Editor multilinha dedicado: <kbd>Enter</kbd> cria linha, `x` remove, <kbd>Esc</kbd> salva.
+- Gerenciadas na **aba Painéis** junto com as imagens (lista única com divisor), e arrastáveis direto no modo "Ajustar na tela", igual aos painéis.
+
+### 🏁 Grade, Plano de Simetria, Detector de Monstros & Super HUD
+- **👾 Detector de Spawn de Monstros (Light 0 Overlay):** Projeta cruzes vermelhas nos blocos escuros onde monstros podem nascer para iluminar vilas e bases com 100% de segurança.
+- **🪞 Plano de Simetria 3D:** Projeta uma parede/espelho de simetria luminoso no mundo (nos eixos X ou Z) para construções perfeitamente espelhadas.
+- **📏 Trava de Altura da Grade:** Fixe a grade do chão em uma coordenada Y específica.
+- **🎨 Super HUD Totalmente Customizável:**
+  - **4 Cantos de Ancoragem:** Superior Esquerdo, Superior Direito, Inferior Esquerdo, Inferior Direito.
+  - **3 Estilos de Fundo:** Glassmorphism Translúcido, Sombra Vanilla e Alto Contraste.
+  - **6 Temas de Cor:** Ciano, Dourado, Esmeralda, Branco, Roxo e Laranja.
+  - **🚨 Alerta de Escuridão:** Destaca em vermelho `⚠️ Luz: Bloco 0 (Perigo!)` se estiver em ponto de spawn.
+  - **Novos Módulos:** **Bloco Mirado**, **Contador de Blocos no Inventário**, **Durabilidade da Ferramenta** e **Linha da Régua**.
 
 ---
 
@@ -73,26 +101,10 @@ Gabaritos visuais em blocos com contagem automática de materiais e visualizaç�
 
 | Tecla | Função |
 |---|---|
-| <kbd>G</kbd> | **Abre o Menu Principal do BuildAid** (Imagens, Hologramas, Formas, Seleção, HUD, Música) |
-| <kbd>H</kbd> | Mostrar / Ocultar os painéis de referência |
-| <kbd>B</kbd> | Ligar / Desligar o modo de seleção de área |
-| <kbd>M</kbd> | Marcar canto da seleção (olhando para um bloco) |
+| <kbd>G</kbd> | **Única tecla de fábrica: abre o Menu Principal do BuildAid** (Imagens, Cores, Gradientes, Anotações, HUD...) |
 
-> [!TIP]
-> Todas as ações (Play/Pause de música, Pular faixa, Alterar volume, Overlay, Grade, Mover formas) podem ser configuradas em **Opções → Controles → BuildAid**.
-
----
-
-## 🌐 Servidor de Sincronização na Nuvem
-
-O mod já vem configurado de fábrica para se conectar automaticamente ao servidor oficial de sincronização na nuvem:
-
-```text
-wss://buildaid-sync-server.onrender.com
-```
-
-- **Hospedagem 24/7:** Hospedado no Render.com com WebSockets de baixa latência.
-- **Sem necessidade de configuração:** Instale o mod e comece a escutar na hora!
+> [!IMPORTANT]
+> **Todas as outras ações saem sem atalho de fábrica** — o mod não rouba nenhuma tecla de outros mods. Quem quiser atalho para (Mostrar/ocultar painéis, Modo seleção, Marcar canto, Régua, Colocar forma/holograma etc.) escolhe as suas em **Opções → Controles → BuildAid**.
 
 ---
 
@@ -111,7 +123,7 @@ wss://buildaid-sync-server.onrender.com
 
 ### Como Instalar
 1. Instale o **Fabric Loader** para o Minecraft 26.2.
-2. Baixe o arquivo **`buildaid-1.2.5+26.2.jar`**.
+2. Baixe o arquivo **`buildaid-1.5.0+26.2.jar`**.
 3. Coloque o `.jar` na sua pasta `.minecraft/mods` junto com o **Cloth Config** e a **Fabric API**.
 4. Inicie o jogo e aperte <kbd>G</kbd> para abrir o menu!
 

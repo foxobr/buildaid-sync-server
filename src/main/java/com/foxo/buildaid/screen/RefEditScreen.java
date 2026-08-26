@@ -1,6 +1,7 @@
 package com.foxo.buildaid.screen;
 
 import com.foxo.buildaid.config.BuildAidConfig;
+import com.foxo.buildaid.config.GlobalUndo;
 import com.foxo.buildaid.hud.RefRenderer;
 import com.foxo.buildaid.image.ImageLibrary;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -13,13 +14,15 @@ import org.lwjgl.glfw.GLFW;
 import java.util.List;
 
 /**
- * Modo de ajuste dos paineis.
+ * Modo de ajuste dos paineis e das anotacoes.
  *
  * <p>Existe porque o HUD nao recebe mouse enquanto o jogo captura o cursor. Abrindo uma
  * {@link Screen} o cursor e liberado e da para arrastar, redimensionar e dar zoom/pan.
  *
  * <p>Com varios paineis, clicar seleciona o que estiver sob o cursor -- de cima para baixo, ja
- * que o ultimo da lista e o desenhado por cima. So o selecionado responde ao arrasto.
+ * que o ultimo da lista e o desenhado por cima. So o selecionado responde ao arrasto. Clicar fora
+ * de todo painel pega uma anotacao, se houver uma ali: as notas sao post-its, e post-it se move
+ * com a mao, nao com slider.
  *
  * <p>Nao pausa o jogo, entao da para ajustar a referencia sem interromper um servidor.
  */
@@ -28,7 +31,7 @@ public class RefEditScreen extends Screen {
 	private static final int TEXT_COLOR = 0xFFF0F4FA;
 
 	private enum Drag {
-		NONE, MOVE, RESIZE, PAN
+		NONE, MOVE, RESIZE, PAN, MOVE_NOTE
 	}
 
 	private final ImageLibrary library;
@@ -36,6 +39,8 @@ public class RefEditScreen extends Screen {
 
 	private Drag drag = Drag.NONE;
 	private int selected;
+	/** Anotacao selecionada ao clicar fora dos paineis (-1 = nenhuma). */
+	private int selectedNote = -1;
 
 	public RefEditScreen(ImageLibrary library) {
 		super(Component.translatable("buildaid.edit.title"));
@@ -45,6 +50,7 @@ public class RefEditScreen extends Screen {
 	@Override
 	protected void init() {
 		selected = Math.clamp(selected, 0, Math.max(0, config.panels.size() - 1));
+		selectedNote = Math.clamp(selectedNote, -1, Math.max(-1, config.notes.size() - 1));
 	}
 
 	@Override
@@ -63,6 +69,31 @@ public class RefEditScreen extends Screen {
 		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
 		List<BuildAidConfig.Panel> panels = config.panels;
+
+		// Anotacoes primeiro: ficam atras dos paineis, igual na HUD de verdade.
+		for (int i = 0; i < config.notes.size(); i++) {
+			BuildAidConfig.Note note = config.notes.get(i);
+			if (!note.visible || note.text == null || note.text.isBlank()) {
+				continue;
+			}
+			int height = com.foxo.buildaid.hud.NoteHudElement.heightOf(this.font, note.text, note.width);
+			int accent = Theme.NOTE_ACCENTS[Math.floorMod(note.colorPreset, Theme.NOTE_ACCENTS.length)];
+
+			Theme.roundedRect(graphics, note.x, note.y, note.width, height, 3, 0xF010141B);
+			Theme.roundedRect(graphics, note.x, note.y, 3, height, 1, accent);
+
+			var lines = com.foxo.buildaid.hud.NoteHudElement.wrap(
+					this.font, note.text, note.width - 15);
+			for (int l = 0; l < lines.size(); l++) {
+				graphics.text(this.font, lines.get(l), note.x + 9, note.y + 6 + l * 10,
+						0xFFE8ECF2, false);
+			}
+
+			if (i == selectedNote && drag != Drag.MOVE_NOTE) {
+				Theme.roundedOutline(graphics, note.x - 1, note.y - 1, note.width + 2, height + 2,
+						Theme.RADIUS, accent);
+			}
+		}
 
 		for (int i = 0; i < panels.size(); i++) {
 			BuildAidConfig.Panel panel = panels.get(i);
@@ -96,7 +127,7 @@ public class RefEditScreen extends Screen {
 					this.width / 2 - 80, this.height / 2, TEXT_COLOR, true);
 		}
 
-		for (int i = 1; i <= 6; i++) {
+		for (int i = 1; i <= 7; i++) {
 			graphics.text(this.font, Component.translatable("buildaid.edit.help" + i),
 					10, 10 + (i - 1) * 12, TEXT_COLOR, true);
 		}
@@ -121,9 +152,20 @@ public class RefEditScreen extends Screen {
 
 		int hit = panelAt(mouseX, mouseY);
 		if (hit < 0) {
+			// Fora de todo painel: um post-it ali? Clicar numa anotacao a seleciona e move.
+			if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+				int noteHit = noteAt(mouseX, mouseY);
+				if (noteHit >= 0) {
+					selectedNote = noteHit;
+					drag = Drag.MOVE_NOTE;
+					return true;
+				}
+			}
+			selectedNote = -1;
 			return false;
 		}
 		selected = hit;
+		selectedNote = -1;
 
 		if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
 			drag = Drag.MOVE;
@@ -138,6 +180,17 @@ public class RefEditScreen extends Screen {
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+		if (drag == Drag.MOVE_NOTE) {
+			BuildAidConfig.Note note = currentNote();
+			if (note != null) {
+				note.x += (int) Math.round(dragX);
+				note.y += (int) Math.round(dragY);
+				note.x = Math.clamp(note.x, -note.width + 24, this.width - 24);
+				note.y = Math.clamp(note.y, 0, Math.max(0, this.height - 24));
+			}
+			return true;
+		}
+
 		BuildAidConfig.Panel panel = current();
 		if (drag == Drag.NONE || panel == null) {
 			return super.mouseDragged(event, dragX, dragY);
@@ -186,7 +239,8 @@ public class RefEditScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
-		BuildAidConfig.Panel panel = current();
+		// R/T/Delete agem no painel; com o foco numa anotacao, nao roubam a acao.
+		BuildAidConfig.Panel panel = selectedNote >= 0 ? null : current();
 
 		if (event.key() == GLFW.GLFW_KEY_R && panel != null) {
 			panel.imageScale = 1.0f;
@@ -196,9 +250,26 @@ public class RefEditScreen extends Screen {
 			return true;
 		}
 
+		if (event.key() == GLFW.GLFW_KEY_T && panel != null) {
+			panel.rotation = (panel.rotation + 90) % 360;
+			config.save();
+			return true;
+		}
+
 		if (event.key() == GLFW.GLFW_KEY_DELETE && panel != null) {
+			GlobalUndo.push();
 			config.panels.remove(selected);
 			selected = Math.clamp(selected, 0, Math.max(0, config.panels.size() - 1));
+			config.save();
+			return true;
+		}
+
+		// Com uma anotacao selecionada, Delete remove o post-it tambem.
+		if (event.key() == GLFW.GLFW_KEY_DELETE && selectedNote >= 0 && selectedNote < config.notes.size()) {
+			GlobalUndo.push();
+			config.notes.remove(selectedNote);
+			selectedNote = -1;
+			drag = Drag.NONE;
 			config.save();
 			return true;
 		}
@@ -222,6 +293,28 @@ public class RefEditScreen extends Screen {
 	private BuildAidConfig.Panel current() {
 		List<BuildAidConfig.Panel> panels = config.panels;
 		return selected >= 0 && selected < panels.size() ? panels.get(selected) : null;
+	}
+
+	/** Anotacao sob o cursor, de cima para baixo (a ultima da lista desenha por cima). */
+	private int noteAt(double mouseX, double mouseY) {
+		for (int i = config.notes.size() - 1; i >= 0; i--) {
+			BuildAidConfig.Note note = config.notes.get(i);
+			if (!note.visible) {
+				continue;
+			}
+			int height = com.foxo.buildaid.hud.NoteHudElement.heightOf(this.font, note.text, note.width);
+			if (mouseX >= note.x && mouseX <= note.x + note.width
+					&& mouseY >= note.y && mouseY <= note.y + height) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	private BuildAidConfig.Note currentNote() {
+		return selectedNote >= 0 && selectedNote < config.notes.size()
+				? config.notes.get(selectedNote)
+				: null;
 	}
 
 	/**

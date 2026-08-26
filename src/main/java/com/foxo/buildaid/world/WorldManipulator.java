@@ -3,6 +3,7 @@ package com.foxo.buildaid.world;
 import com.foxo.buildaid.Feedback;
 import com.foxo.buildaid.Keys;
 import com.foxo.buildaid.config.BuildAidConfig;
+import com.foxo.buildaid.config.GlobalUndo;
 import net.minecraft.client.Minecraft;
 import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
@@ -185,6 +186,52 @@ public final class WorldManipulator {
 			return;
 		}
 		config.save();
+	}
+
+	/**
+	 * Anda uma camada na forma mirada (layer-by-layer). Se o fatiador estiver desligado
+	 * (modo todas as camadas), liga no modo "apenas a camada" para o passo fazer sentido.
+	 */
+	public static void stepLayer(int step) {
+		if (kind != Kind.SHAPE || index < 0 || index >= BuildAidConfig.get().shapes.size()) {
+			Feedback.error("buildaid.msg.manip_none");
+			return;
+		}
+		BuildAidConfig.Shape s = BuildAidConfig.get().shapes.get(index);
+		if (!s.placed) {
+			Feedback.error("buildaid.msg.manip_none");
+			return;
+		}
+		// Sem fatiador ligado, o primeiro passo entra no modo de camada unica.
+		if (s.layerMode == 0) {
+			s.layerMode = 1;
+		}
+		int maxLayer = Math.max(0, s.height - 1);
+		s.activeLayer = Math.clamp(s.activeLayer + step, 0, maxLayer);
+		BuildAidConfig.get().save();
+		Feedback.info("buildaid.msg.layer_step", s.activeLayer, maxLayer);
+	}
+
+	/** Exclui o alvo selecionado (holograma ou forma) do mundo. */
+	public static boolean deleteTarget() {
+		if (!hasTarget()) {
+			return false;
+		}
+		BuildAidConfig config = BuildAidConfig.get();
+		if (kind == Kind.HOLOGRAM && index >= 0 && index < config.holograms.size()) {
+			GlobalUndo.push();
+			config.holograms.remove(index);
+			Feedback.info("buildaid.msg.hologram_removed", index + 1);
+		} else if (kind == Kind.SHAPE && index >= 0 && index < config.shapes.size()) {
+			GlobalUndo.push();
+			config.shapes.remove(index);
+			Feedback.info("buildaid.msg.shape_removed", index + 1);
+		} else {
+			return false;
+		}
+		clearTarget();
+		config.save();
+		return true;
 	}
 
 	// ---------------------------------------------------------------- alcas
