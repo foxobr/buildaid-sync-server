@@ -26,10 +26,16 @@ public final class Theme {
 
 	public static final int TEXT = 0xFFE8ECF2;
 	public static final int TEXT_DIM = 0xFF98A2B3;
-	public static final int TEXT_DISABLED = 0xFF5A6273;
+	public static final int TEXT_DISABLED = 0xFFA0A0A0; // ↑ contrast 4.5:1+ (was 0xFF5A6273 @ 2.6:1)
 	public static final int TEXT_ON_ACCENT = 0xFF0B1220;
 
 	public static final int BORDER = 0xFF333B49;
+
+	// === Semantic spacing constants (replaces magic numbers) ===
+	public static final int GAP_SECTION = 24;   // entre secoes / grupos
+	public static final int GAP_ROW = 16;       // entre linhas normais
+	public static final int GAP_COMPACT = 12;   // espacamento compacto
+	public static final int BUTTON_LABEL_PADDING = 6; // padding interno de botoes
 
 	public static final int RADIUS = 3;
 	public static final int PAD = 8;
@@ -142,6 +148,33 @@ public final class Theme {
 	/** Barrinha de acento vertical -- marca a aba ativa. */
 	public static void accentBar(GuiGraphicsExtractor graphics, int x, int y, int height) {
 		roundedRect(graphics, x, y, 3, height, 1, accent());
+	}
+
+	/** Barrinha de acento vertical na cor informada (chips de status: perigo/regua). */
+	public static void accentBar(GuiGraphicsExtractor graphics, int x, int y, int height, int color) {
+		roundedRect(graphics, x, y, 3, height, 1, color);
+	}
+
+	/** Fundo + barra de acento de um chip de status de uma linha. Centraliza o
+	 *  desenho de contorno/barra dos chips (ModPlayers, Zona de Perigo) para que
+	 *  todos usem o mesmo alfa/raio e fiquem consistentes. O texto e desenhado
+	 *  pelo chamador por cima (cor unica ou duas passadas). borderAlpha modula o
+	 *  contorno/barra -- ex.: pulso de alerta da zona de perigo. */
+	public static void statusChipBg(GuiGraphicsExtractor graphics, int x, int y, int width, int height,
+			int color, float borderAlpha) {
+		hudChip(graphics, x, y, width, height, withAlpha(color, borderAlpha));
+		accentBar(graphics, x + 3, y + 3, height - 6, color);
+	}
+
+	/** Fundo glassmorphism compartilhado dos chips de HUD (InfoHud, ModPlayers,
+	 *  Zona de Perigo, Regua). Mantem alpha/raio iguais entre todos os chips. */
+	public static final int CHIP_BG = 0x88121620;
+
+	/** Caixa de chip: fundo translucido + contorno na cor de acento informada. */
+	public static void hudChip(GuiGraphicsExtractor graphics, int x, int y, int width, int height,
+			int borderColor) {
+		roundedRect(graphics, x, y, width, height, 4, CHIP_BG);
+		roundedOutline(graphics, x, y, width, height, 4, borderColor);
 	}
 
 	/** Mistura alfa num ARGB ja pronto (0.0 a 1.0). */

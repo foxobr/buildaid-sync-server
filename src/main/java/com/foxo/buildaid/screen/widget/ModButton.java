@@ -9,8 +9,14 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
+import java.util.List;
+
 /**
  * Botao chapado no visual do mod. Tres estilos: normal, primario (acento) e destrutivo.
+ *
+ * <p>O texto e truncado com "..." se nao couber -- assim botoes estreitos (ex.: as transformacoes
+ * de blueprint divididas em 3 colunas) nunca vazam sobre o vizinho nem saem do painel. Opcionalmente
+ * um tooltip mostra o texto completo quando o rotulo foi encurtado.
  */
 public class ModButton extends AbstractWidget {
 	public enum Style {
@@ -19,11 +25,18 @@ public class ModButton extends AbstractWidget {
 
 	private final Runnable onPress;
 	private final Style style;
+	private final Component tooltip;
 
 	public ModButton(int x, int y, int width, int height, Component message, Style style, Runnable onPress) {
+		this(x, y, width, height, message, style, onPress, null);
+	}
+
+	public ModButton(int x, int y, int width, int height, Component message, Style style,
+			Runnable onPress, Component tooltip) {
 		super(x, y, width, height, message);
 		this.style = style;
 		this.onPress = onPress;
+		this.tooltip = tooltip;
 	}
 
 	public static ModButton of(int x, int y, int width, int height, String label, Runnable onPress) {
@@ -54,12 +67,21 @@ public class ModButton extends AbstractWidget {
 		}
 
 		Font font = Minecraft.getInstance().font;
+		// Trunca o rotulo para caber no botao, com reticencias, em vez de deixar vazar.
 		String label = getMessage().getString();
-		int labelWidth = font.width(label);
+		int maxText = getWidth() - (Theme.BUTTON_LABEL_PADDING * 2); // was - 8
+		if (font.width(label) > maxText) {
+			label = font.plainSubstrByWidth(label, maxText - 6) + "...";
+		}
 		graphics.text(font, label,
-				getX() + (getWidth() - labelWidth) / 2,
+				getX() + (getWidth() - font.width(label)) / 2,
 				getY() + (getHeight() - font.lineHeight) / 2 + 1,
 				textColor, false);
+
+		// Tooltip aparece so quando o cursor esta em cima (e ha o que mostrar).
+		if (hovered && tooltip != null) {
+			graphics.setComponentTooltipForNextFrame(font, List.of(tooltip), mouseX, mouseY);
+		}
 	}
 
 	@Override
