@@ -67,11 +67,12 @@ public class ModButton extends AbstractWidget {
 		}
 
 		Font font = Minecraft.getInstance().font;
-		// Trunca o rotulo para caber no botao, com reticencias, em vez de deixar vazar.
+		// Trunca o rotulo para caber no botao, com reticencias, e tooltip completo.
 		String label = getMessage().getString();
-		int maxText = getWidth() - (Theme.BUTTON_LABEL_PADDING * 2); // was - 8
+		// Usa padding semantico do tema para truncar o rotulo
+		int maxText = getWidth() - Theme.BUTTON_LABEL_PADDING * 2;
 		if (font.width(label) > maxText) {
-			label = font.plainSubstrByWidth(label, maxText - 6) + "...";
+			label = font.plainSubstrByWidth(label, Math.max(maxText - 6, 0)) + "...";
 		}
 		graphics.text(font, label,
 				getX() + (getWidth() - font.width(label)) / 2,

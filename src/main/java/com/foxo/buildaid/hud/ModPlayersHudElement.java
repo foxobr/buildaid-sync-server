@@ -1,14 +1,13 @@
 package com.foxo.buildaid.hud;
 
 import com.foxo.buildaid.net.ModDetection;
+import com.foxo.buildaid.screen.Theme;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
-
-import java.util.List;
 
 /**
  * Fatia 3 da deteccao de mod: HUD discreta com a contagem de jogadores com o BuildAid.
@@ -33,15 +32,31 @@ public final class ModPlayersHudElement implements HudElement {
         }
 
         Font font = client.font;
-        // Prefixo de marca em ciano + texto traduzido (lang pt/en com paridade).
-        Component chip = Component.literal("\u00A7b[BuildAid]\u00A7f ")
-                .append(Component.translatable("buildaid.hud.mod_players", total));
-        int textWidth = font.width(chip);
+        // Prefixo de marca na cor de acento do tema global (respeita uiTheme) + texto traduzido.
+        int accent = Theme.accent();
+        Component brand = Component.literal("[BuildAid] ");
+        Component rest = Component.translatable("buildaid.hud.mod_players", total);
+        int brandW = font.width(brand);
+        int textWidth = brandW + font.width(rest);
 
-        int x = graphics.guiWidth() - textWidth - 12;
+        int padX = Theme.PAD;       // padding horizontal dinamico via Theme
+        int padY = Theme.PAD / 2;   // padding vertical: metade do horizontal
+        int minBoxW = 80;           // largura minima para nao colapsar com texto curto
+        int boxW = Math.max(minBoxW, textWidth + padX * 2);
+        int boxH = Math.max(18, font.lineHeight + padY * 2 + 2);
+        
+        int x = graphics.guiWidth() - boxW - 4;
+        
         int y = 6;
+        int infoBottom = InfoHudElement.topRightBottom();
+        if (infoBottom >= 0 && y < infoBottom) {
+            y = infoBottom + Theme.PAD / 2; // espacamento dinamico em vez de 4 fixo
+        }
 
-        graphics.fill(x - 5, y - 3, x + textWidth + 5, y + 11, 0x9010141B);
-        graphics.text(font, chip, x, y, 0xFFFFFF, true);
+        Theme.statusChipBg(graphics, x, y, boxW, boxH, accent, 0.5f);
+        // Centraliza verticalmente usando lineHeight real
+        int textY = y + (boxH - font.lineHeight) / 2;
+        graphics.text(font, brand, x + padX, textY, accent, true);
+        graphics.text(font, rest, x + padX + brandW, textY, 0xFFFFFF, true);
     }
 }
