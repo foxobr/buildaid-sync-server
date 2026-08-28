@@ -17,15 +17,27 @@ import net.minecraft.network.chat.Component;
  * abaixo da area da hotbar/mira, com fundo escuro translucido no estilo do mod.
  */
 public final class ModPlayersHudElement implements HudElement {
+	// === PERF FIX #2: Cache de contagem de jogadores ===
+	// ModDetection.count() varre todos os players toda frame.
+	// Cache por tick — contagem só muda quando alguém entra/sai.
+	private static int cachedTotal = -1;
+	private static long cachedTick = -1;
 
-    @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
-        Minecraft client = Minecraft.getInstance();
-        if (client.player == null) {
-            return;
-        }
+	@Override
+	public void extractRenderState(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+		Minecraft client = Minecraft.getInstance();
+		if (client.player == null) {
+			cachedTotal = -1;
+			return;
+		}
 
-        int total = ModDetection.count();
+		// Cache válido por tick inteiro
+		long currentTick = client.level != null ? client.level.getLevelData().getGameTime() : 0;
+		if (cachedTotal == -1 || cachedTick != currentTick) {
+			cachedTotal = ModDetection.count();
+			cachedTick = currentTick;
+		}
+		int total = cachedTotal;
         // 0 = vanilla/sem resposta; 1 = so o proprio; nada a mostrar nesses casos.
         if (total <= 1) {
             return;

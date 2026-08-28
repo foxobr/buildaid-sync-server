@@ -32,6 +32,13 @@ public final class InfoHudElement implements HudElement {
 	private static final int PADDING = 4;
 	private static final int GAP = 2;
 
+	// === PERF FIX #1: Cache de linhas HUD por tick ===
+	// buildLines() aloca string.format + Component transalvel por frame.
+	// Cache valido por tick inteiro (HUD nao muda mid-tick).
+	private static List<HudLine> cachedLines = null;
+	private static long cachedTick = -1;
+	private static int cachedActiveModules = 0;
+
 	// Identificadores de secão (usados so no modo agrupado).
 	private static final int SECTION_PLAYER = 0;
 	private static final int SECTION_WORLD = 1;
@@ -59,16 +66,30 @@ public final class InfoHudElement implements HudElement {
 		BuildAidConfig.InfoHud config = BuildAidConfig.get().infoHud;
 		if (!config.enabled) {
 			lastVisible = false;
+			cachedLines = null; // invalida cache
 			return;
 		}
 
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null || client.level == null) {
 			lastVisible = false;
+			cachedLines = null;
 			return;
 		}
 
-		List<HudLine> lines = buildLines(client, config);
+		// === PERF FIX #1: Cache de linhas ===
+		// Só reconstroí as linhas se mudou algo (tick avançou ou módulos ativos alteraram)
+		long currentTick = client.level.getLevelData().getGameTime();
+		int activeModules = countActiveModules(config);
+		List<HudLine> lines;
+		if (cachedLines != null && cachedTick == currentTick && cachedActiveModules == activeModules) {
+			lines = cachedLines;
+		} else {
+			lines = buildLines(client, config);
+			cachedLines = lines;
+			cachedTick = currentTick;
+			cachedActiveModules = activeModules;
+		}
 		if (lines.isEmpty()) {
 			lastVisible = false;
 			return;
@@ -204,6 +225,24 @@ public final class InfoHudElement implements HudElement {
 
 	private static boolean hasSelectionLine() {
 		return AreaSelection.isModeEnabled() && AreaSelection.hasSelection();
+	}
+
+	/** Conta módulos HUD ativos — usado como cache key (evita rebuild se nada mudou). */
+	private static int countActiveModules(BuildAidConfig.InfoHud config) {
+		int count = 0;
+		if (config.showCoords) count++;
+		if (config.showDirection) count++;
+		if (config.showAngles) count++;
+		if (config.showTargetDistance || config.showTargetBlock) count++;
+		if (config.showHeldCount) count++;
+		if (config.showDurability) count++;
+		if (config.showBiome) count++;
+		if (config.showLight) count++;
+		if (config.showTime) count++;
+		if (config.showFps) count++;
+		if (hasSelectionLine()) count++;
+		if (com.foxo.buildaid.build.TapeMeasure.isActive()) count++;
+		return count;
 	}
 
 	private static List<HudLine> buildLines(Minecraft client, BuildAidConfig.InfoHud config) {
