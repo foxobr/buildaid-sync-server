@@ -35,7 +35,7 @@ public final class Theme {
 	public static final int GAP_SECTION = 24;   // entre secoes / grupos
 	public static final int GAP_ROW = 16;       // entre linhas normais
 	public static final int GAP_COMPACT = 12;   // espacamento compacto
-	public static final int BUTTON_LABEL_PADDING = 6; // padding interno de botoes
+	public static final int BUTTON_LABEL_PADDING = 8; // padding interno de botoes (was 6, increased per UI review)
 
 	public static final int RADIUS = 3;
 	public static final int PAD = 8;
