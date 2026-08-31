@@ -6,6 +6,7 @@ import com.foxo.buildaid.screen.Theme;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -156,26 +157,28 @@ public final class InfoHudElement implements HudElement {
 		}
 	}
 
-	/** Converte as linhas em entradas de desenho, inserindo cabecalhos de secão quando agrupado. */
-	private static List<DrawEntry> buildDrawEntries(List<HudLine> lines, boolean grouped) {
-		List<DrawEntry> out = new ArrayList<>();
-		if (!grouped) {
+	/** Converte as linhas em entradas de desenho, inserindo cabecalhos de secao quando agrupado. */
+		private static List<DrawEntry> buildDrawEntries(List<HudLine> lines, boolean grouped) {
+			List<DrawEntry> out = new ArrayList<>();
+			Font font = Minecraft.getInstance().font;
+			if (!grouped) {
+				for (HudLine l : lines) {
+					out.add(DrawEntry.line(l.text(), l.overrideColor(), font.width(l.text())));
+				}
+				return out;
+			}
+
+			int lastSection = -1;
 			for (HudLine l : lines) {
-				out.add(new DrawEntry(DrawEntry.TYPE_LINE, l.text(), l.overrideColor()));
+				if (l.section() != lastSection) {
+					Component label = sectionLabel(l.section());
+					out.add(DrawEntry.header(label, font.width(label)));
+					lastSection = l.section();
+				}
+				out.add(DrawEntry.line(l.text(), l.overrideColor(), font.width(l.text())));
 			}
 			return out;
 		}
-
-		int lastSection = -1;
-		for (HudLine l : lines) {
-			if (l.section() != lastSection) {
-				out.add(new DrawEntry(DrawEntry.TYPE_HEADER, sectionLabel(l.section()), 0));
-				lastSection = l.section();
-			}
-			out.add(new DrawEntry(DrawEntry.TYPE_LINE, l.text(), l.overrideColor()));
-		}
-		return out;
-	}
 
 	private static Component sectionLabel(int section) {
 		return switch (section) {
@@ -199,9 +202,17 @@ public final class InfoHudElement implements HudElement {
 	}
 
 	/** Cor de contorno do fundo glassmorphism: combina com resolveColor(colorTheme). */
+	private static int cachedTheme = -1;
+	private static int cachedPrimaryColor = 0;
+
 	private static int primaryColorForBg() {
-		// Espelha resolveColor() sem depender do estado da caixa.
-		return resolveColor(BuildAidConfig.get().infoHud.colorTheme);
+		// === PERF FIX #4: Evita resolveColor() switch toda frame ===
+		int currentTheme = BuildAidConfig.get().infoHud.colorTheme;
+		if (cachedTheme != currentTheme) {
+			cachedPrimaryColor = resolveColor(currentTheme);
+			cachedTheme = currentTheme;
+		}
+		return cachedPrimaryColor;
 	}
 
 	private static int resolveColor(int theme) {
@@ -218,9 +229,16 @@ public final class InfoHudElement implements HudElement {
 	private record HudLine(Component text, int overrideColor, int section) {
 	}
 
-	private record DrawEntry(int type, Component text, int overrideColor) {
+	private record DrawEntry(int type, Component text, int overrideColor, int textWidth) {
 		static final int TYPE_LINE = 0;
 		static final int TYPE_HEADER = 1;
+
+		static DrawEntry line(Component text, int overrideColor, int width) {
+			return new DrawEntry(TYPE_LINE, text, overrideColor, width);
+		}
+		static DrawEntry header(Component text, int width) {
+			return new DrawEntry(TYPE_HEADER, text, 0, width);
+		}
 	}
 
 	private static boolean hasSelectionLine() {
@@ -292,17 +310,16 @@ public final class InfoHudElement implements HudElement {
 						total += is.getCount();
 					}
 				}
-				// Usa o tamanho maximo real da pilha (alguns itens empilham so ate 16)
+				// === PERF FIX #3: Cache String.format em held_count ===
 				int stackMax = Math.max(1, stack.getMaxStackSize());
 				int packs = total / stackMax;
 				int rem = total % stackMax;
 				String packUnit = Component.translatable("buildaid.hud.pack_unit").getString();
 				String summary = packs > 0 && rem > 0 ? (total + " (" + packs + packUnit + " + " + rem + ")")
 						: packs > 0 ? (total + " (" + packs + packUnit + ")") : String.valueOf(total);
-				// Nome do item pode ser enorme (encantado/customizado): limita a largura da linha.
 				String name = stack.getHoverName().getString();
-				int maxItem = Math.max(40, 220 - client.font.width(Component.literal(summary)));
-				if (client.font.width(Component.literal(name)) > maxItem) {
+				int maxItem = Math.max(40, 220 - client.font.width(summary));
+				if (client.font.width(name) > maxItem) {
 					name = client.font.plainSubstrByWidth(name, maxItem - 6) + "...";
 				}
 				lines.add(new HudLine(Component.translatable("buildaid.hud.held_count", name, summary), 0, SECTION_PLAYER));
@@ -371,12 +388,13 @@ public final class InfoHudElement implements HudElement {
 			}
 			if (end != null) {
 				int dx = Math.abs(end.getX() - start.getX()) + 1;
-				int dy = Math.abs(end.getY() - start.getY()) + 1;
-				int dz = Math.abs(end.getZ() - start.getZ()) + 1;
-				double dist = Math.sqrt(
-						Math.pow(end.getX() - start.getX(), 2) +
-								Math.pow(end.getY() - start.getY(), 2) +
-								Math.pow(end.getZ() - start.getZ(), 2));
+							int dy = Math.abs(end.getY() - start.getY()) + 1;
+							int dz = Math.abs(end.getZ() - start.getZ()) + 1;
+							// === PERF FIX #5: dist^2 + sqrt só uma vez (vs 3x Math.pow) ===
+							double diffX = end.getX() - start.getX();
+							double diffY = end.getY() - start.getY();
+							double diffZ = end.getZ() - start.getZ();
+							double dist = Math.sqrt(diffX * diffX + diffY * diffY + diffZ * diffZ);
 				lines.add(new HudLine(Component.translatable("buildaid.hud.tape_measure",
 								String.format("%.1f", dist), dx, dy, dz), 0xFF00FFCC, SECTION_BUILD));
 			}
